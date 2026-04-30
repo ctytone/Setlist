@@ -259,3 +259,21 @@ export async function syncSavedAlbumsAction() {
   revalidatePath("/app/albums");
   revalidatePath("/app/settings");
 }
+
+export async function deleteAlbumAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const albumId = getFormString(formData, "albumId");
+  if (!albumId) {
+    throw new Error("Album ID is required");
+  }
+
+  await supabase.from("user_albums").delete().match({
+    user_id: user.id,
+    album_id: albumId,
+  });
+
+  revalidatePath("/app/albums");
+  revalidatePath("/app/stats");
+  revalidatePath("/app/settings");
+}
