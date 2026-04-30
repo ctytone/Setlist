@@ -80,10 +80,15 @@ export default async function AlbumsPage({
     query = query.order("updated_at", { ascending: false });
   }
 
-  const { data: rows } = await query;
+  console.log("[Albums page] User ID:", user.id);
+  const { data: rows, error } = await query;
+  console.log("[Albums page] Query result:", { rowCount: rows?.length, error, sample: rows?.[0] });
 
   const filtered = (rows ?? []).filter((row) => {
     const album = pickAlbum(row.albums as AlbumRelation);
+    if (!album) {
+      console.log("[Albums page] Filtered out row with null album:", row);
+    }
     const status = row.item_statuses?.[0]?.status;
     const releaseYear = album?.release_date?.slice(0, 4);
     const artistName = pickArtistName(album?.artists ?? null);
