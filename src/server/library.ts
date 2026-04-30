@@ -61,7 +61,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
   }
 
   for (const artist of album.artists) {
-    await supabase.from("artists").upsert(
+    await serviceRoleClient.from("artists").upsert(
       {
         spotify_id: artist.id,
         name: artist.name,
@@ -75,7 +75,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
     );
   }
 
-  const { data: artistRows } = await supabase
+  const { data: artistRows } = await serviceRoleClient
     .from("artists")
     .select("id,spotify_id")
     .in(
@@ -85,7 +85,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
 
   const primaryArtistId = artistRows?.[0]?.id ?? null;
 
-  const { data: insertedAlbum, error: albumError } = await supabase
+  const { data: insertedAlbum, error: albumError } = await serviceRoleClient
     .from("albums")
     .upsert(
       {
@@ -115,7 +115,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
 
   for (const track of album.tracks.items) {
     for (const trackArtist of track.artists) {
-      await supabase.from("artists").upsert(
+      await serviceRoleClient.from("artists").upsert(
         {
           spotify_id: trackArtist.id,
           name: trackArtist.name,
@@ -124,7 +124,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
       );
     }
 
-    const { data: insertedTrack } = await supabase
+    const { data: insertedTrack } = await serviceRoleClient
       .from("tracks")
       .upsert(
         {
@@ -143,7 +143,7 @@ export async function upsertAlbumGraphForUser(album: SpotifyAlbumPayload) {
       .single();
 
     if (insertedTrack) {
-      await supabase.from("album_tracks").upsert(
+      await serviceRoleClient.from("album_tracks").upsert(
         {
           album_id: insertedAlbum.id,
           track_id: insertedTrack.id,
