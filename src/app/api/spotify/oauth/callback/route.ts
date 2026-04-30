@@ -53,6 +53,20 @@ export async function GET(request: Request) {
 
     // Use service role client to bypass RLS for this privileged operation
     const serviceRoleClient = createServiceRoleClient();
+    const { error: userError } = await serviceRoleClient.from("users").upsert(
+      {
+        id: user.id,
+        handle: user.user_metadata?.user_name ?? null,
+        display_name: user.user_metadata?.full_name ?? null,
+      },
+      { onConflict: "id" },
+    );
+
+    if (userError) {
+      console.error("[Spotify callback] User backfill error:", userError);
+      throw userError;
+    }
+
     const { error, data } = await serviceRoleClient.from("spotify_accounts").upsert(
       {
         user_id: user.id,
