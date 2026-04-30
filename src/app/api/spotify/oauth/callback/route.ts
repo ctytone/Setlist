@@ -48,9 +48,12 @@ export async function GET(request: Request) {
       product?: string;
     };
 
-    // Use service role client to bypass RLS for this privileged operation
-    const serviceRoleClient = createServiceRoleClient();
-    await serviceRoleClient.from("spotify_accounts").upsert(
+  console.log("[Spotify callback] Profile fetched:", profile);
+  console.log("[Spotify callback] User ID:", user.id);
+
+  // Use service role client to bypass RLS for this privileged operation
+  const serviceRoleClient = createServiceRoleClient();
+  const { error, data } = await serviceRoleClient.from("spotify_accounts").upsert(
       {
         user_id: user.id,
         spotify_user_id: profile.id,
@@ -65,8 +68,17 @@ export async function GET(request: Request) {
       { onConflict: "user_id" },
     );
 
+    if (error) {
+      console.error("[Spotify callback] Upsert error:", error);
+      throw error;
+    }
+
+    console.log("[Spotify callback] Upsert success:", data);
+
     return NextResponse.redirect(new URL("/app/settings?spotify=linked", request.url));
   } catch {
+      } catch (error) {
+        console.error("[Spotify callback] Error:", error);
     return NextResponse.redirect(new URL("/app/settings?spotify=failed", request.url));
   }
 }
