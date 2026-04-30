@@ -1,4 +1,4 @@
-# AlbumTracker
+# Setlist
 
 A polished, mobile-friendly foundation for a Spotify-powered album and song rating app.
 

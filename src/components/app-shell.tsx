@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary">
               <Music2 className="h-4 w-4" />
             </span>
-            <span className="font-heading text-lg">AlbumTracker</span>
+            <span className="font-heading text-lg">Setlist</span>
           </Link>
           <div className="hidden md:block">
             <NavLinks />

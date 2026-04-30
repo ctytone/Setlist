@@ -13,7 +13,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "AlbumTracker",
+  title: "Setlist",
   description: "A polished album and song rating tracker with Spotify sync.",
 };
 

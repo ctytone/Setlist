@@ -18,7 +18,7 @@ export default function Home() {
       <main className="container relative mx-auto flex flex-1 flex-col px-4 py-10 sm:px-6 lg:px-8">
         <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-8 py-10 md:py-16">
           <span className="font-heading text-sm uppercase tracking-[0.24em] text-muted-foreground">
-            AlbumTracker
+            Setlist
           </span>
           <h1 className="max-w-3xl font-heading text-4xl leading-tight text-balance sm:text-5xl md:text-6xl">
             A cleaner way to track every album and song you have actually listened to.
