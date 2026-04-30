@@ -68,8 +68,7 @@ export default async function AlbumsPage({
         release_date,
         cover_url,
         artists:primary_artist_id (name)
-      ),
-      item_statuses: item_statuses!left (status)
+      )
     `,
     )
     .eq("user_id", user.id);
@@ -84,12 +83,23 @@ export default async function AlbumsPage({
   const { data: rows, error } = await query;
   console.log("[Albums page] Query result:", { rowCount: rows?.length, error, sample: rows?.[0] });
 
+  // Fetch item statuses separately since there's no direct FK relationship
+  const albumIds = (rows ?? []).map((row) => row.album_id);
+  const { data: itemStatuses } = await supabase
+    .from("item_statuses")
+    .select("item_id,status")
+    .eq("user_id", user.id)
+    .eq("item_type", "album")
+    .in("item_id", albumIds.length > 0 ? albumIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const statusMap = new Map(itemStatuses?.map((s) => [s.item_id, s]) ?? []);
+
   const filtered = (rows ?? []).filter((row) => {
     const album = pickAlbum(row.albums as AlbumRelation);
     if (!album) {
       console.log("[Albums page] Filtered out row with null album:", row);
     }
-    const status = row.item_statuses?.[0]?.status;
+    const status = statusMap.get(row.album_id)?.status;
     const releaseYear = album?.release_date?.slice(0, 4);
     const artistName = pickArtistName(album?.artists ?? null);
 
@@ -164,6 +174,7 @@ export default async function AlbumsPage({
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {filtered.map((row) => {
             const album = pickAlbum(row.albums as AlbumRelation);
+            const status = statusMap.get(row.album_id)?.status ?? null;
 
             return (
               <AlbumCard
@@ -173,7 +184,7 @@ export default async function AlbumsPage({
                 artist={pickArtistName(album?.artists ?? null) || "Unknown artist"}
                 coverUrl={album?.cover_url ?? null}
                 rating={row.derived_rating ? Number(row.derived_rating) : null}
-                status={row.item_statuses?.[0]?.status ?? null}
+                status={status}
               />
             );
           })}
