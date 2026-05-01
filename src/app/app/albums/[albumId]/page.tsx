@@ -1,11 +1,6 @@
 import Image from "next/image";
 
-import {
-  assignTagAction,
-  createTagAction,
-  rateSongAction,
-  updateStatusAction,
-} from "@/server/actions/app-actions";
+import { assignTagAction, createTagAction, updateStatusAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { RatingStars } from "@/components/rating-stars";
+import LiveAlbumAverage from "@/components/live-album-average";
+import SongRatingForm from "@/components/song-rating-form";
 
 const ratingValues = Array.from({ length: 10 }, (_, index) => ((index + 1) * 0.5).toFixed(1));
 
@@ -136,6 +133,9 @@ export default async function AlbumDetailPage({
                 {totalTracks - listenedCount} not listened to yet
               </Badge>
             </div>
+            <div className="mt-4">
+              <LiveAlbumAverage albumId={albumId} />
+            </div>
             <form action={updateStatusAction} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="itemType" value="album" />
               <input type="hidden" name="itemId" value={albumId} />
@@ -214,12 +214,9 @@ export default async function AlbumDetailPage({
                     {rating ? `${rating.toFixed(1)} stars` : "Not listened to yet"}
                   </Badge>
                 </div>
-                <form action={rateSongAction} className="mt-3 flex items-center gap-2">
-                  <input type="hidden" name="trackId" value={track.id} />
-                  <input type="hidden" name="albumId" value={albumId} />
-                  {/* Render 5-star submit buttons; clicking a star submits the form immediately */}
-                  <RatingStars name="rating" value={rating ? Number(rating) : null} />
-                </form>
+                <div className="mt-3">
+                  <SongRatingForm trackId={track.id} albumId={albumId} initialRating={rating ? Number(rating) : null} />
+                </div>
               </div>
             );
           })}
