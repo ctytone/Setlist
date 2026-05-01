@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { StarDisplay } from "./star-display";
 
 export function LiveAlbumAverage({ albumId }: { albumId: string }) {
   const [average, setAverage] = useState<number | null>(null);
@@ -37,8 +38,8 @@ export function LiveAlbumAverage({ albumId }: { albumId: string }) {
   return (
     <div className="w-full rounded-md border border-red-500 p-4">
       <h3 className="text-sm font-medium text-muted-foreground">Live album average</h3>
-      <div className="mt-2 text-4xl font-heading">
-        {average !== null ? `${Number(average).toFixed(2)} ★` : "—"}
+      <div className="mt-2">
+        <StarDisplay value={average} />
       </div>
     </div>
   );
