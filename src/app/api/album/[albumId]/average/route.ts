@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 import { requireUser } from "@/server/auth";
 
-export async function GET(request: Request, { params }: { params: { albumId: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ albumId: string }> },
+) {
   const { supabase } = await requireUser();
 
-  const albumId = params.albumId;
+  const { albumId } = await context.params;
 
   const { data } = await supabase
     .from("user_albums")
