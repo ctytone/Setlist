@@ -7,7 +7,11 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    const formData = new FormData(form);
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const formData = submitter ? new FormData(form, submitter) : new FormData(form);
+    if (submitter?.name && submitter.value && !formData.has(submitter.name)) {
+      formData.append(submitter.name, submitter.value);
+    }
     const payload: any = {};
     for (const [k, v] of formData.entries()) {
       payload[k] = v;
