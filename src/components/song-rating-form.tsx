@@ -3,8 +3,22 @@
 import React from "react";
 import { RatingStars } from "./rating-stars";
 
-export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: string; albumId?: string; initialRating?: number | null }) {
+export function SongRatingForm({
+  trackId,
+  albumId,
+  initialRating,
+  onRatingChange,
+}: {
+  trackId: string;
+  albumId?: string;
+  initialRating?: number | null;
+  onRatingChange?: (rating: number | null) => void;
+}) {
   const [rating, setRating] = React.useState<number | null>(initialRating ?? null);
+
+  React.useEffect(() => {
+    setRating(initialRating ?? null);
+  }, [initialRating]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,6 +34,7 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
     const previousRating = rating;
     if (Number.isFinite(clickedRating)) {
       setRating(clickedRating);
+      onRatingChange?.(clickedRating);
     }
 
     const payload: any = {};
@@ -43,6 +58,7 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
       window.dispatchEvent(new CustomEvent("album-average-updated", { detail: { albumId: payload.albumId, average: json.average } }));
     } catch (err) {
       setRating(previousRating);
+      onRatingChange?.(previousRating);
       console.error("Failed to submit rating", err);
     }
   }

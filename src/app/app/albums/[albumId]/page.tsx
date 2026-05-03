@@ -7,11 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { RatingStars } from "@/components/rating-stars";
 import LiveAlbumAverage from "@/components/live-album-average";
-import SongRatingForm from "@/components/song-rating-form";
-
-const ratingValues = Array.from({ length: 10 }, (_, index) => ((index + 1) * 0.5).toFixed(1));
+import SongRatingCell from "@/components/song-rating-cell";
 
 type TrackRelation =
   | {
@@ -210,12 +207,11 @@ export default async function AlbumDetailPage({
                       {Math.round(Number(track.duration_ms) / 60000)} min
                     </p>
                   </div>
-                  <Badge variant={rating ? "default" : "secondary"}>
-                    {rating ? `${rating.toFixed(1)} stars` : "Not listened to yet"}
-                  </Badge>
-                </div>
-                <div className="mt-3">
-                  <SongRatingForm trackId={track.id} albumId={albumId} initialRating={rating ? Number(rating) : null} />
+                  <SongRatingCell
+                    trackId={track.id}
+                    albumId={albumId}
+                    initialRating={rating ? Number(rating) : null}
+                  />
                 </div>
               </div>
             );
