@@ -4,6 +4,8 @@ import React from "react";
 import { RatingStars } from "./rating-stars";
 
 export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: string; albumId?: string; initialRating?: number | null }) {
+  const [rating, setRating] = React.useState<number | null>(initialRating ?? null);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -12,6 +14,14 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
     if (submitter?.name && submitter.value && !formData.has(submitter.name)) {
       formData.append(submitter.name, submitter.value);
     }
+
+    const clickedRatingRaw = formData.get("rating");
+    const clickedRating = Number(clickedRatingRaw);
+    const previousRating = rating;
+    if (Number.isFinite(clickedRating)) {
+      setRating(clickedRating);
+    }
+
     const payload: any = {};
     for (const [k, v] of formData.entries()) {
       payload[k] = v;
@@ -24,10 +34,15 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
         body: JSON.stringify(payload),
       });
 
+      if (!res.ok) {
+        throw new Error(`Failed to save rating (${res.status})`);
+      }
+
       const json = await res.json();
       // Notify listeners (e.g., LiveAlbumAverage) about updated average
       window.dispatchEvent(new CustomEvent("album-average-updated", { detail: { albumId: payload.albumId, average: json.average } }));
     } catch (err) {
+      setRating(previousRating);
       console.error("Failed to submit rating", err);
     }
   }
@@ -36,7 +51,7 @@ export function SongRatingForm({ trackId, albumId, initialRating }: { trackId: s
     <form onSubmit={onSubmit}>
       <input type="hidden" name="trackId" value={trackId} />
       {albumId ? <input type="hidden" name="albumId" value={albumId} /> : null}
-      <RatingStars name="rating" value={initialRating ?? null} />
+      <RatingStars name="rating" value={rating} />
     </form>
   );
 }
