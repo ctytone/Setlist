@@ -41,7 +41,10 @@ export async function GET(request: Request) {
     });
 
     if (!profileResponse.ok) {
-      throw new Error("Could not fetch Spotify profile.");
+      const errorText = await profileResponse.text();
+      throw new Error(
+        `Could not fetch Spotify profile (${profileResponse.status}): ${errorText.slice(0, 220)}`,
+      );
     }
 
     const profile = (await profileResponse.json()) as {
