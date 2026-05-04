@@ -27,9 +27,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
   }
 
+  let step = "token_exchange";
+
   try {
     const token = await fetchSpotifyToken(code);
 
+    step = "profile_fetch";
     const profileResponse = await fetch("https://api.spotify.com/v1/me", {
       headers: {
         Authorization: `Bearer ${token.access_token}`,
@@ -53,6 +56,7 @@ export async function GET(request: Request) {
 
     // Use service role client to bypass RLS for this privileged operation
     const serviceRoleClient = createServiceRoleClient();
+    step = "users_upsert";
     const { error: userError } = await serviceRoleClient.from("users").upsert(
       {
         id: user.id,
@@ -67,6 +71,7 @@ export async function GET(request: Request) {
       throw userError;
     }
 
+    step = "spotify_account_upsert";
     const { error, data } = await serviceRoleClient.from("spotify_accounts").upsert(
       {
         user_id: user.id,
@@ -91,7 +96,14 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(new URL("/app/settings?spotify=linked", request.url));
   } catch (error) {
-    console.error("[Spotify callback] Error:", error);
-    return NextResponse.redirect(new URL("/app/settings?spotify=failed", request.url));
+    const reason = error instanceof Error ? error.message : "unknown_error";
+    console.error(`[Spotify callback] Error at step ${step}:`, error);
+
+    const failureUrl = new URL("/app/settings", request.url);
+    failureUrl.searchParams.set("spotify", "failed");
+    failureUrl.searchParams.set("spotify_step", step);
+    failureUrl.searchParams.set("spotify_error", reason.slice(0, 180));
+
+    return NextResponse.redirect(failureUrl);
   }
 }

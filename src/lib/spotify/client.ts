@@ -59,7 +59,10 @@ export async function fetchSpotifyToken(code: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to exchange Spotify OAuth code.");
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to exchange Spotify OAuth code (${response.status}): ${errorText.slice(0, 220)}`,
+    );
   }
 
   return response.json() as Promise<{
@@ -92,7 +95,10 @@ export async function refreshSpotifyToken(refreshToken: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh Spotify access token.");
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to refresh Spotify access token (${response.status}): ${errorText.slice(0, 220)}`,
+    );
   }
 
   return response.json() as Promise<{

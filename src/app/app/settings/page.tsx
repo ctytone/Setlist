@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ spotify?: string }>;
+  searchParams: Promise<{ spotify?: string; spotify_step?: string; spotify_error?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -40,6 +40,8 @@ export default async function SettingsPage({
       {params.spotify ? (
         <p className="rounded-md border border-border/70 bg-muted/40 p-3 text-sm">
           Spotify link result: {params.spotify}
+          {params.spotify_step ? ` (step: ${params.spotify_step})` : ""}
+          {params.spotify_error ? ` - ${params.spotify_error}` : ""}
         </p>
       ) : null}
 
