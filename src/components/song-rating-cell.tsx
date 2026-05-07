@@ -28,7 +28,7 @@ export default function SongRatingCell({
   const ratingColor = getRatingColor(rating);
 
   return (
-    <div className="flex items-center justify-end gap-3">
+    <div className="grid grid-cols-[auto_136px] items-center justify-end gap-3">
       <Badge
         variant={ratingColor ? "outline" : "secondary"}
         className="h-8 rounded-full px-3 text-sm font-semibold"
@@ -45,7 +45,7 @@ export default function SongRatingCell({
         {rating ? `${rating.toFixed(1)} stars` : "Not listened to yet"}
       </Badge>
 
-      <div className="w-24 flex justify-end">
+      <div className="w-[136px] shrink-0 flex justify-end">
         <SongRatingForm
           trackId={trackId}
           albumId={albumId}
