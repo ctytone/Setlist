@@ -15,6 +15,16 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Setlist",
   description: "A polished album and song rating tracker with Spotify sync.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Setlist",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
