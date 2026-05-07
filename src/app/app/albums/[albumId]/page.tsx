@@ -1,10 +1,11 @@
 import Image from "next/image";
 
-import { assignTagAction, createTagAction, updateStatusAction } from "@/server/actions/app-actions";
+import { assignTagAction, createTagAction, updateStatusAction, deleteAlbumAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import LiveAlbumAverage from "@/components/live-album-average";
@@ -102,7 +103,7 @@ export default async function AlbumDetailPage({
 
   return (
     <section className="space-y-6">
-      <Card>
+      <Card className="relative">
         <CardContent className="grid gap-4 p-4 sm:grid-cols-[220px_1fr]">
           <div className="aspect-square w-full overflow-hidden rounded-md bg-muted">
             {album.cover_url ? (
@@ -151,6 +152,19 @@ export default async function AlbumDetailPage({
             </form>
           </div>
         </CardContent>
+        <form action={deleteAlbumAction} className="absolute right-4 top-4">
+          <input type="hidden" name="albumId" value={albumId} />
+          <Button
+            type="submit"
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+            onClick={(e) => e.stopPropagation()}
+            title="Remove album from library"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </form>
       </Card>
 
       <Card>

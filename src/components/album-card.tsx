@@ -2,13 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
-
+import { StarDisplay } from "@/components/star-display";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { StarDisplay } from "@/components/star-display";
-import { deleteAlbumAction } from "@/server/actions/app-actions";
 
 export function AlbumCard({
   id,
@@ -56,19 +52,7 @@ export function AlbumCard({
           </CardContent>
         </Card>
       </Link>
-      <form action={deleteAlbumAction} className="absolute right-2 top-2">
-        <input type="hidden" name="albumId" value={id} />
-        <Button
-          type="submit"
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-          onClick={(e) => e.stopPropagation()}
-          title="Remove album from library"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </form>
+      {/* Delete button removed from album grid; available on album detail page */}
     </div>
   );
 }

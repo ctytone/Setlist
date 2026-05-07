@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StarDisplay } from "@/components/star-display";
 import { requireUser } from "@/server/auth";
 
 function pickNameRelation(
@@ -19,9 +20,9 @@ function pickNameRelation(
 export default async function StatsPage() {
   const { supabase, user } = await requireUser();
 
-  const [{ data: ratings }, { data: topAlbums }, { data: topArtists }, { count: totalTracks }] =
+  const [{ data: ratings }, { data: topAlbums }, { data: topArtists }, { data: userAlbums }] =
     await Promise.all([
-      supabase.from("song_ratings").select("rating").eq("user_id", user.id),
+      supabase.from("song_ratings").select("track_id,rating").eq("user_id", user.id),
       supabase
         .from("user_albums")
         .select("derived_rating,albums!inner(name)")
@@ -33,10 +34,13 @@ export default async function StatsPage() {
         .from("song_ratings")
         .select("rating,tracks!inner(artists:primary_artist_id(name))")
         .eq("user_id", user.id),
-      supabase
-        .from("album_tracks")
-        .select("track_id", { count: "exact", head: true }),
+      supabase.from("user_albums").select("album_id").eq("user_id", user.id),
     ]);
+
+  const userAlbumIds = (userAlbums ?? []).map((row) => row.album_id);
+  const { data: libraryTracks } = userAlbumIds.length
+    ? await supabase.from("album_tracks").select("track_id").in("album_id", userAlbumIds)
+    : { data: [] as Array<{ track_id: string }> };
 
   const distribution = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((bucket) => ({
     bucket,
@@ -66,7 +70,9 @@ export default async function StatsPage() {
     .sort((a, b) => b.average - a.average)
     .slice(0, 5);
 
-  const listenedTracks = ratings?.length ?? 0;
+  const libraryTrackIds = new Set((libraryTracks ?? []).map((row) => row.track_id));
+  const totalTracks = libraryTrackIds.size;
+  const listenedTracks = (ratings ?? []).filter((row) => libraryTrackIds.has(row.track_id)).length;
   const progress = totalTracks ? Math.round((listenedTracks / totalTracks) * 100) : 0;
 
   return (
@@ -84,7 +90,7 @@ export default async function StatsPage() {
             <CardTitle>Listening progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm text-muted-foreground">
-            <p>{progress}% of indexed tracks rated</p>
+            <p>{progress}% of your library tracks rated</p>
             <p>
               {listenedTracks}/{totalTracks ?? 0} tracks rated
             </p>
@@ -123,7 +129,7 @@ export default async function StatsPage() {
                 <span>
                   {albumName}
                 </span>
-                <span className="text-muted-foreground">{Number(album.derived_rating).toFixed(2)}</span>
+                <StarDisplay value={Number(album.derived_rating)} size="sm" />
               </div>
               );
             })}
@@ -138,7 +144,7 @@ export default async function StatsPage() {
             {rankedArtists.map((artist) => (
               <div key={artist.name} className="flex items-center justify-between">
                 <span>{artist.name}</span>
-                <span className="text-muted-foreground">{artist.average.toFixed(2)}</span>
+                <StarDisplay value={artist.average} size="sm" />
               </div>
             ))}
           </CardContent>
