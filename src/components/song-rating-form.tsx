@@ -32,7 +32,16 @@ export function SongRatingForm({
     const clickedRatingRaw = formData.get("rating");
     const clickedRating = Number(clickedRatingRaw);
     const previousRating = rating;
-    if (Number.isFinite(clickedRating)) {
+    const shouldClear =
+      Number.isFinite(clickedRating) &&
+      rating !== null &&
+      Number(clickedRating.toFixed(1)) === Number(rating.toFixed(1));
+
+    if (shouldClear) {
+      formData.set("clear", "true");
+      setRating(null);
+      onRatingChange?.(null);
+    } else if (Number.isFinite(clickedRating)) {
       setRating(clickedRating);
       onRatingChange?.(clickedRating);
     }
