@@ -18,12 +18,28 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Setlist",
+  },
+  formatDetection: {
+    telephone: false,
   },
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
+  },
+  openGraph: {
+    title: "Setlist",
+    description: "A polished album and song rating tracker with Spotify sync.",
+    type: "website",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "Setlist",
+    "apple-mobile-web-app-icon": "/icon.png",
+    "theme-color": "#000000",
   },
 };
 
