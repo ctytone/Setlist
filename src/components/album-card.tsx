@@ -7,6 +7,7 @@ import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StarDisplay } from "@/components/star-display";
 import { deleteAlbumAction } from "@/server/actions/app-actions";
 
 export function AlbumCard({
@@ -44,9 +45,11 @@ export function AlbumCard({
               <p className="line-clamp-1 text-sm font-medium">{name}</p>
               <p className="line-clamp-1 text-xs text-muted-foreground">{artist}</p>
               <div className="flex items-center justify-between gap-2 text-xs">
-                <span>
-                  {rating === null ? "Not listened" : `${rating.toFixed(2)} avg`}
-                </span>
+                {rating === null ? (
+                  <span>Not listened</span>
+                ) : (
+                  <StarDisplay value={rating} size="sm" />
+                )}
                 {status ? <Badge variant="secondary">{status.replaceAll("_", " ")}</Badge> : null}
               </div>
             </div>

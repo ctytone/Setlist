@@ -8,16 +8,24 @@ import { cn } from "@/lib/utils";
  * Does not support interaction - purely for display.
  * Rounds the value to nearest 0.5.
  */
-export function StarDisplay({ value }: { value: number | null }) {
+export function StarDisplay({
+  value,
+  size = "md",
+}: {
+  value: number | null;
+  size?: "sm" | "md";
+}) {
   if (value === null) {
     return <div className="text-muted-foreground">—</div>;
   }
 
   // Round to nearest 0.5
   const rounded = Math.round(value * 2) / 2;
+  const iconSize = size === "sm" ? "h-4 w-4" : "h-6 w-6";
+  const gap = size === "sm" ? "gap-0.5" : "gap-1";
 
   return (
-    <div className="flex items-center gap-1">
+    <div className={cn("flex items-center", gap)}>
       {Array.from({ length: 5 }, (_, idx) => {
         const star = idx + 1;
         let fill = 0;
@@ -29,13 +37,13 @@ export function StarDisplay({ value }: { value: number | null }) {
 
         return (
           <div key={star} className="relative inline-flex items-center">
-            <div className="relative w-6 h-6">
-              <Star className="absolute inset-0 h-6 w-6 text-muted-foreground" />
+            <div className={cn("relative", iconSize)}>
+              <Star className={cn("absolute inset-0 text-muted-foreground", iconSize)} />
               <div
-                className="absolute left-0 top-0 h-6 overflow-hidden"
+                className={cn("absolute left-0 top-0 overflow-hidden", iconSize)}
                 style={{ width: `${fill}%` }}
               >
-                <Star className="h-6 w-6 text-yellow-400 fill-current" />
+                <Star className={cn("text-yellow-400 fill-current", iconSize)} />
               </div>
             </div>
           </div>
