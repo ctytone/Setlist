@@ -36,8 +36,8 @@ export function LiveAlbumAverage({ albumId }: { albumId: string }) {
   }, [albumId]);
 
   return (
-    <div className="w-full rounded-md border border-red-500 p-4">
-      <h3 className="text-sm font-medium text-muted-foreground">Live album average</h3>
+    <div className="w-full rounded-md border p-4">
+      <h3 className="text-sm font-medium text-muted-foreground">Album Rating</h3>
       <div className="mt-2">
         <StarDisplay value={average} />
       </div>
