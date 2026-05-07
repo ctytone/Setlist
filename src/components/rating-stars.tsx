@@ -39,7 +39,7 @@ export function RatingStars({ value, name }: { value: number | null; name?: stri
                 className="absolute left-0 top-0 h-6 overflow-hidden"
                 style={{ width: `${fill}%` }}
               >
-                <Star className="h-6 w-6 text-yellow-400 fill-current" />
+                <Star className="h-6 w-6 text-muted-foreground fill-yellow-400" />
               </div>
             </div>
 

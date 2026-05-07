@@ -43,7 +43,7 @@ export function StarDisplay({
                 className={cn("absolute left-0 top-0 overflow-hidden", iconSize)}
                 style={{ width: `${fill}%` }}
               >
-                <Star className={cn("text-yellow-400 fill-current", iconSize)} />
+                <Star className={cn("text-muted-foreground fill-yellow-400", iconSize)} />
               </div>
             </div>
           </div>
