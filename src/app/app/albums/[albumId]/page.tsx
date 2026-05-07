@@ -159,7 +159,6 @@ export default async function AlbumDetailPage({
             size="sm"
             variant="ghost"
             className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-            onClick={(e) => e.stopPropagation()}
             title="Remove album from library"
           >
             <Trash2 className="h-4 w-4" />
