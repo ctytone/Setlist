@@ -127,8 +127,12 @@ export async function updateStatusAction(formData: FormData) {
     },
   );
 
+  // Revalidate listing and the specific album page, then navigate
   revalidatePath("/app/albums");
   revalidatePath(`/app/albums/${parsed.data.itemId}`);
+
+  // Redirect back to the album page so the client receives the fresh server render
+  redirect(`/app/albums/${parsed.data.itemId}`);
 }
 
 export async function createTagAction(formData: FormData) {
