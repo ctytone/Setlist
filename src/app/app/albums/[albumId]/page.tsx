@@ -59,7 +59,7 @@ export default async function AlbumDetailPage({
   const { albumId } = await params;
   const { supabase, user } = await requireUser();
 
-  const [{ data: album }, { data: trackRows }, { data: ratings }, { data: statuses }, { data: tags }, { data: itemTags }] = await Promise.all([
+  const [{ data: album }, { data: trackRows }, { data: ratings }, { data: statuses }] = await Promise.all([
     supabase
       .from("albums")
       .select("id,name,release_date,cover_url,artists:primary_artist_id(id,name)")
@@ -79,13 +79,6 @@ export default async function AlbumDetailPage({
       .eq("item_type", "album")
       .eq("item_id", albumId)
       .maybeSingle(),
-    supabase.from("tags").select("id,name").eq("user_id", user.id).order("name", { ascending: true }),
-    supabase
-      .from("item_tags")
-      .select("tag_id")
-      .eq("user_id", user.id)
-      .eq("item_type", "album")
-      .eq("item_id", albumId),
   ]);
 
   if (!album) {
@@ -98,7 +91,6 @@ export default async function AlbumDetailPage({
     return Boolean(track?.id && ratingMap.has(track.id));
   }).length;
   const totalTracks = trackRows?.length ?? 0;
-  const selectedTagIds = new Set((itemTags ?? []).map((item) => item.tag_id));
   const artist = pickArtist(album.artists as ArtistRelation);
 
   return (
@@ -166,35 +158,7 @@ export default async function AlbumDetailPage({
         </form>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tags</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <form action={createTagAction} className="flex gap-2">
-            <Input name="name" placeholder="Create tag" className="max-w-xs" />
-            <Button type="submit" variant="outline">
-              Add tag
-            </Button>
-          </form>
-          <div className="flex flex-wrap gap-2">
-            {(tags ?? []).map((tag) => (
-              <form key={tag.id} action={assignTagAction}>
-                <input type="hidden" name="itemType" value="album" />
-                <input type="hidden" name="itemId" value={albumId} />
-                <input type="hidden" name="tagId" value={tag.id} />
-                <Button
-                  type="submit"
-                  size="sm"
-                  variant={selectedTagIds.has(tag.id) ? "default" : "outline"}
-                >
-                  {tag.name}
-                </Button>
-              </form>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tags UI removed — will be reintroduced later with automated tagging */}
 
       <Card>
         <CardHeader>
