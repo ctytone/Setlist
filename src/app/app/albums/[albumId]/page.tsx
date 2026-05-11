@@ -130,7 +130,6 @@ export default async function AlbumDetailPage({
             {/* Client-side status form with animated confirmation */}
             {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
             {/* Render client component */}
-            {/* @ts-expect-error Server component importing client component */}
             <StatusForm itemId={albumId} initialStatus={statuses?.status ?? "want_to_listen"} />
           </div>
         </CardContent>
