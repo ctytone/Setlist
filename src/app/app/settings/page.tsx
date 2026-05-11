@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { createTagAction, signOutAction, syncSavedAlbumsAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { cn } from "@/lib/utils";
+import LocalTime from "@/components/local-time";
 
 export default async function SettingsPage({
   searchParams,
@@ -68,7 +69,7 @@ export default async function SettingsPage({
             </form>
           </div>
           <p>
-            Last sync: {syncState?.completed_at ? new Date(syncState.completed_at).toLocaleString() : "Never"}
+            Last sync: <LocalTime iso={syncState?.completed_at ?? null} />
           </p>
           {syncState?.status ? <p>Status: {syncState.status}</p> : null}
           {syncState?.imported_count ? <p>Imported albums: {syncState.imported_count}</p> : null}

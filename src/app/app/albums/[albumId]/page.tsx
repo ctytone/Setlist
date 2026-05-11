@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { assignTagAction, createTagAction, updateStatusAction, deleteAlbumAction } from "@/server/actions/app-actions";
+import { deleteAlbumAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import LiveAlbumAverage from "@/components/live-album-average";
 import SongRatingCell from "@/components/song-rating-cell";
+import StatusForm from "@/components/status-form";
 
 type TrackRelation =
   | {
@@ -126,22 +127,11 @@ export default async function AlbumDetailPage({
             <div className="mt-4">
               <LiveAlbumAverage albumId={albumId} />
             </div>
-            <form action={updateStatusAction} className="flex flex-wrap items-center gap-2">
-              <input type="hidden" name="itemType" value="album" />
-              <input type="hidden" name="itemId" value={albumId} />
-              <select
-                name="status"
-                defaultValue={statuses?.status ?? "want_to_listen"}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="want_to_listen">Want to listen</option>
-                <option value="currently_listening">Currently listening</option>
-                <option value="rated">Rated</option>
-              </select>
-              <Button type="submit" variant="outline">
-                Save status
-              </Button>
-            </form>
+            {/* Client-side status form with animated confirmation */}
+            {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+            {/* Render client component */}
+            {/* @ts-expect-error Server component importing client component */}
+            <StatusForm itemId={albumId} initialStatus={statuses?.status ?? "want_to_listen"} />
           </div>
         </CardContent>
         <form action={deleteAlbumAction} className="absolute right-4 top-4">
