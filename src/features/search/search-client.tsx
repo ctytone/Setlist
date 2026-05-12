@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { addAlbumFromSpotifyAction } from "@/server/actions/app-actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -146,9 +146,12 @@ export function SearchClient() {
                       {artist.genres?.length ? artist.genres.join(", ") : "Artist"}
                     </p>
                   </div>
-                  <Button asChild className="w-full" size="sm">
-                    <Link href={`/app/artists/${artist.id}`}>View artist</Link>
-                  </Button>
+                  <Link
+                    href={`/app/artists/${artist.id}`}
+                    className={buttonVariants({ variant: "default", size: "sm", className: "w-full" })}
+                  >
+                    View artist
+                  </Link>
                 </CardContent>
               </Card>
             );
