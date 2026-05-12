@@ -107,7 +107,12 @@ export function RatingDistribution({ distribution, onRatingSelected }: RatingDis
                     ) : null}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm line-clamp-1">{song.name}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm line-clamp-1">{song.name}</p>
+                      <div className="ml-2">
+                        <StarDisplay value={selectedRating ?? 0} size="sm" />
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground line-clamp-1">
                       {getArtistName(song.artists)}
                     </p>
