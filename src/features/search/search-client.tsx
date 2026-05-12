@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { addAlbumFromSpotifyAction } from "@/server/actions/app-actions";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,21 @@ type SpotifyAlbumResult = {
   artists: Array<{ name: string }>;
 };
 
+type SpotifyArtistResult = {
+  id: string;
+  name: string;
+  images?: Array<{ url: string }>;
+  genres?: string[];
+};
+
+type SearchResult =
+  | { kind: "album"; item: SpotifyAlbumResult }
+  | { kind: "artist"; item: SpotifyArtistResult };
+
 export function SearchClient() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("album");
-  const [results, setResults] = useState<SpotifyAlbumResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -62,9 +74,16 @@ export function SearchClient() {
         throw new Error(await readErrorMessage(response));
       }
 
-      const json = (await response.json()) as { albums?: { items?: SpotifyAlbumResult[] } };
+      const json = (await response.json()) as {
+        albums?: { items?: SpotifyAlbumResult[] };
+        artists?: { items?: SpotifyArtistResult[] };
+      };
 
-      setResults((json.albums?.items ?? []) as SpotifyAlbumResult[]);
+      if (type === "artist") {
+        setResults((json.artists?.items ?? []).map((item) => ({ kind: "artist", item })));
+      } else {
+        setResults((json.albums?.items ?? []).map((item) => ({ kind: "album", item })));
+      }
     } catch (searchError) {
       setError(searchError instanceof Error ? searchError.message : "Search failed");
       setResults([]);
@@ -103,36 +122,73 @@ export function SearchClient() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((album) => (
-          <Card key={album.id}>
-            <CardContent className="space-y-3 p-4">
-              <div className="aspect-square overflow-hidden rounded-md bg-muted">
-                {album.images[0]?.url ? (
-                  <Image
-                    src={album.images[0].url}
-                    alt={album.name}
-                    width={300}
-                    height={300}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-              </div>
-              <div>
-                <p className="line-clamp-1 text-sm font-semibold">{album.name}</p>
-                <p className="line-clamp-1 text-xs text-muted-foreground">
-                  {album.artists.map((artist) => artist.name).join(", ")}
-                </p>
-                <p className="text-xs text-muted-foreground">{album.release_date || "Unknown date"}</p>
-              </div>
-              <form action={addAlbumFromSpotifyAction}>
-                <input type="hidden" name="spotifyAlbumId" value={album.id} />
-                <Button type="submit" className="w-full" size="sm">
-                  Add album
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        ))}
+        {results.map((result) => {
+          if (result.kind === "artist") {
+            const artist = result.item;
+
+            return (
+              <Card key={artist.id}>
+                <CardContent className="space-y-3 p-4">
+                  <div className="aspect-square overflow-hidden rounded-md bg-muted">
+                    {artist.images?.[0]?.url ? (
+                      <Image
+                        src={artist.images[0].url}
+                        alt={artist.name}
+                        width={300}
+                        height={300}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="line-clamp-1 text-sm font-semibold">{artist.name}</p>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {artist.genres?.length ? artist.genres.join(", ") : "Artist"}
+                    </p>
+                  </div>
+                  <Button asChild className="w-full" size="sm">
+                    <Link href={`/app/artists/${artist.id}`}>View artist</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          const album = result.item;
+
+          return (
+            <Card key={album.id}>
+              <CardContent className="space-y-3 p-4">
+                <div className="aspect-square overflow-hidden rounded-md bg-muted">
+                  {album.images[0]?.url ? (
+                    <Image
+                      src={album.images[0].url}
+                      alt={album.name}
+                      width={300}
+                      height={300}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div>
+                  <p className="line-clamp-1 text-sm font-semibold">{album.name}</p>
+                  <p className="line-clamp-1 text-xs text-muted-foreground">
+                    {album.artists.map((artist) => artist.name).join(", ")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {album.release_date || "Unknown date"}
+                  </p>
+                </div>
+                <form action={addAlbumFromSpotifyAction}>
+                  <input type="hidden" name="spotifyAlbumId" value={album.id} />
+                  <Button type="submit" className="w-full" size="sm">
+                    Add album
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
