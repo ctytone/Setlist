@@ -33,28 +33,27 @@ export default async function ArtistPage({
   const { artistId } = await params;
   const { supabase, user } = await requireUser();
 
-  const [{ data: artist }, { data: albums }] = await Promise.all([
-    supabase
-      .from("artists")
-      .select("id,name,image_url,popularity,genres")
-      .eq("id", artistId)
-      .maybeSingle(),
-    supabase
-      .from("user_albums")
-      .select(
-        `
-        album_id,
-        derived_rating,
-        albums!inner(id,name,cover_url,primary_artist_id)
-      `,
-      )
-      .eq("user_id", user.id)
-      .eq("albums.primary_artist_id", artistId),
-  ]);
+  const { data: artist } = await supabase
+    .from("artists")
+    .select("id,name,image_url,popularity,genres,spotify_id")
+    .eq("spotify_id", artistId)
+    .maybeSingle();
 
   if (!artist) {
     return <EmptyState title="Artist not found" description="Try opening from an album page." />;
   }
+
+  const { data: albums } = await supabase
+    .from("user_albums")
+    .select(
+      `
+      album_id,
+      derived_rating,
+      albums!inner(id,name,cover_url,primary_artist_id)
+    `,
+    )
+    .eq("user_id", user.id)
+    .eq("albums.primary_artist_id", artist.id);
 
   return (
     <section className="space-y-5">
