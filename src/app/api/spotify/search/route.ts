@@ -8,20 +8,22 @@ import { getSpotifyAppAccessToken } from "@/lib/spotify/app-token";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const parsedQuery = searchSchema.safeParse({
+  const parsedQuery = searchSchema.pick({ query: true, type: true }).safeParse({
     query: searchParams.get("query") ?? "",
     type: searchParams.get("type") ?? "album",
-    limit: searchParams.get("limit") ?? "20",
   });
 
   if (!parsedQuery.success) {
     return NextResponse.json({ error: "Invalid query." }, { status: 400 });
   }
 
+  const rawLimit = Number.parseInt(searchParams.get("limit") ?? "20", 10);
+  const limit = Number.isFinite(rawLimit) && rawLimit >= 1 && rawLimit <= 50 ? rawLimit : 20;
+
   try {
     const token = await getSpotifyAppAccessToken();
     const data = await spotifyFetch(
-      `/search?q=${encodeURIComponent(parsedQuery.data.query)}&type=${parsedQuery.data.type}&limit=${parsedQuery.data.limit}`,
+      `/search?q=${encodeURIComponent(parsedQuery.data.query)}&type=${parsedQuery.data.type}&limit=${limit}`,
       token,
       searchResponseSchema,
     );

@@ -36,9 +36,12 @@ export function SearchClient() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/spotify/search?query=${encodeURIComponent(query)}&type=${type}&limit=20`,
-      );
+      const params = new URLSearchParams({
+        query,
+        type,
+      });
+
+      const response = await fetch(`/api/spotify/search?${params.toString()}`);
       const json = await response.json();
 
       if (!response.ok) {
