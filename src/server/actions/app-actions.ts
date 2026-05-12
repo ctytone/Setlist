@@ -285,42 +285,51 @@ export async function deleteAlbumAction(formData: FormData) {
 export async function getSongsByRatingAction(rating: number) {
   const { supabase, user } = await requireUser();
 
-  const { data, error } = await supabase
+  const { data: ratings, error: ratingsError } = await supabase
     .from("song_ratings")
-    .select(
-      `
-      tracks!inner(
-        id,
-        name,
-        duration_ms,
-        artists:primary_artist_id(name),
-        album_tracks!inner(album_id, albums(id, name, cover_url))
-      )
-    `,
-    )
+    .select("track_id,tracks(id,name,duration_ms,artists:primary_artist_id(name))")
     .eq("user_id", user.id)
     .eq("rating", rating)
-    .order("created_at", { ascending: false });
+    .order("rated_at", { ascending: false });
 
-  if (error) {
-    throw new Error(`Failed to fetch songs: ${error.message}`);
+  if (ratingsError) {
+    throw new Error(`Failed to fetch songs: ${ratingsError.message}`);
   }
 
-  return (data ?? [])
+  const trackIds = (ratings ?? []).map((row: any) => row.track_id);
+
+  if (trackIds.length === 0) {
+    return [];
+  }
+
+  const { data: albumTracks, error: albumError } = await supabase
+    .from("album_tracks")
+    .select("track_id,albums(id,name,cover_url)")
+    .in("track_id", trackIds);
+
+  if (albumError) {
+    throw new Error(`Failed to fetch album info: ${albumError.message}`);
+  }
+
+  const albumMap = new Map<string, any>();
+  (albumTracks ?? []).forEach((row: any) => {
+    const album = Array.isArray(row.albums) ? row.albums[0] : row.albums;
+    albumMap.set(row.track_id, album);
+  });
+
+  return (ratings ?? [])
     .map((row: any) => {
-      const track = row.tracks;
-      const albumTrack = Array.isArray(track.album_tracks)
-        ? track.album_tracks[0]
-        : track.album_tracks;
-      const album = albumTrack?.albums;
+      const track = Array.isArray(row.tracks) ? row.tracks[0] : row.tracks;
+      const artists = track?.artists;
+      const album = albumMap.get(row.track_id);
 
       return {
-        id: track.id,
-        name: track.name,
-        duration_ms: track.duration_ms,
-        artists: track.artists,
+        id: track?.id,
+        name: track?.name,
+        duration_ms: track?.duration_ms,
+        artists,
         album,
       };
     })
-    .filter((item) => item);
+    .filter((item) => item.id);
 }
