@@ -25,6 +25,21 @@ export function SearchClient() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  async function readErrorMessage(response: Response) {
+    const responseText = await response.text();
+
+    if (!responseText) {
+      return response.statusText || "Search failed";
+    }
+
+    try {
+      const json = JSON.parse(responseText) as { error?: string };
+      return json.error ?? response.statusText ?? "Search failed";
+    } catch {
+      return responseText;
+    }
+  }
+
   async function onSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -42,11 +57,12 @@ export function SearchClient() {
       });
 
       const response = await fetch(`/api/spotify/search?${params.toString()}`);
-      const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(json.error ?? "Search failed");
+        throw new Error(await readErrorMessage(response));
       }
+
+      const json = (await response.json()) as { albums?: { items?: SpotifyAlbumResult[] } };
 
       setResults((json.albums?.items ?? []) as SpotifyAlbumResult[]);
     } catch (searchError) {
