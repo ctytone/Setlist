@@ -281,3 +281,46 @@ export async function deleteAlbumAction(formData: FormData) {
   revalidatePath("/app/stats");
   revalidatePath("/app/settings");
 }
+
+export async function getSongsByRatingAction(rating: number) {
+  const { supabase, user } = await requireUser();
+
+  const { data, error } = await supabase
+    .from("song_ratings")
+    .select(
+      `
+      tracks!inner(
+        id,
+        name,
+        duration_ms,
+        artists:primary_artist_id(name),
+        album_tracks!inner(album_id, albums(id, name, cover_url))
+      )
+    `,
+    )
+    .eq("user_id", user.id)
+    .eq("rating", rating)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch songs: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .map((row: any) => {
+      const track = row.tracks;
+      const albumTrack = Array.isArray(track.album_tracks)
+        ? track.album_tracks[0]
+        : track.album_tracks;
+      const album = albumTrack?.albums;
+
+      return {
+        id: track.id,
+        name: track.name,
+        duration_ms: track.duration_ms,
+        artists: track.artists,
+        album,
+      };
+    })
+    .filter((item) => item);
+}

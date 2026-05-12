@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StarDisplay } from "@/components/star-display";
+import { RatingDistribution } from "@/components/rating-distribution";
+import { getSongsByRatingAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 
 function pickNameRelation(
@@ -101,13 +103,11 @@ export default async function StatsPage() {
           <CardHeader>
             <CardTitle>Rating distribution</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {distribution.map((entry) => (
-              <div key={entry.bucket} className="flex items-center justify-between">
-                <span>{entry.bucket.toFixed(1)} stars</span>
-                <span className="text-muted-foreground">{entry.count}</span>
-              </div>
-            ))}
+          <CardContent>
+            <RatingDistribution
+              distribution={distribution}
+              onRatingSelected={getSongsByRatingAction}
+            />
           </CardContent>
         </Card>
       </div>
