@@ -24,5 +24,5 @@ export const tagAssignmentSchema = z.object({
 export const searchSchema = z.object({
   query: z.string().min(1).max(150),
   type: z.enum(["album", "artist", "track"]).default("album"),
-  limit: z.coerce.number().min(1).max(50).default(20),
+  limit: z.coerce.number().min(1).max(10).default(10),
 });

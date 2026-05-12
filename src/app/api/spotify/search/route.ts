@@ -17,8 +17,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid query." }, { status: 400 });
   }
 
-  const rawLimit = Number.parseInt(searchParams.get("limit") ?? "20", 10);
-  const limit = Number.isFinite(rawLimit) && rawLimit >= 1 && rawLimit <= 50 ? rawLimit : 20;
+  const rawLimit = Number.parseInt(searchParams.get("limit") ?? "10", 10);
+  const limit = Number.isFinite(rawLimit) && rawLimit >= 1 && rawLimit <= 10 ? rawLimit : 10;
 
   try {
     const token = await getSpotifyAppAccessToken();
