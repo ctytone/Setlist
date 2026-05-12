@@ -135,55 +135,6 @@ export async function updateStatusAction(formData: FormData) {
   redirect(`/app/albums/${parsed.data.itemId}`);
 }
 
-export async function createTagAction(formData: FormData) {
-  const { supabase, user } = await requireUser();
-
-  const name = getFormString(formData, "name").trim().slice(0, 40);
-  if (!name) {
-    return;
-  }
-
-  await supabase.from("tags").upsert(
-    {
-      user_id: user.id,
-      name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-    },
-    {
-      onConflict: "user_id,slug",
-    },
-  );
-
-  revalidatePath("/app/albums");
-  revalidatePath("/app/settings");
-}
-
-export async function assignTagAction(formData: FormData) {
-  const { supabase, user } = await requireUser();
-
-  const itemType = getFormString(formData, "itemType");
-  const itemId = getFormString(formData, "itemId");
-  const tagId = getFormString(formData, "tagId");
-
-  if (!itemType || !itemId || !tagId) {
-    return;
-  }
-
-  await supabase.from("item_tags").upsert(
-    {
-      user_id: user.id,
-      item_type: itemType,
-      item_id: itemId,
-      tag_id: tagId,
-    },
-    {
-      onConflict: "user_id,item_type,item_id,tag_id",
-    },
-  );
-
-  revalidatePath("/app/albums");
-  revalidatePath(`/app/albums/${itemId}`);
-}
 
 export async function addAlbumFromSpotifyAction(formData: FormData) {
   const spotifyAlbumId = getFormString(formData, "spotifyAlbumId");

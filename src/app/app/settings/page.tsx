@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createTagAction, signOutAction, syncSavedAlbumsAction } from "@/server/actions/app-actions";
+import { signOutAction, syncSavedAlbumsAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { cn } from "@/lib/utils";
 import LocalTime from "@/components/local-time";
@@ -89,19 +89,7 @@ export default async function SettingsPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tags</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createTagAction} className="flex gap-2">
-            <Input name="name" placeholder="Create a reusable tag" className="max-w-sm" />
-            <Button type="submit" variant="outline">
-              Save tag
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Tags UI removed per user request */}
 
       <form action={signOutAction}>
         <Button type="submit" variant="outline">Sign out</Button>
