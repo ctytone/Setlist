@@ -11,7 +11,7 @@ import LocalTime from "@/components/local-time";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ spotify?: string }>;
+  searchParams: Promise<{ spotify?: string; username?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
