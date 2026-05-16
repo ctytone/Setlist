@@ -1,13 +1,14 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireUser } from "@/server/auth";
 import { Friend, FriendRequest, FriendActivity, User } from "@/lib/types";
 
 // Get user's friends list with basic info
 export async function getFriendsList(): Promise<Friend[]> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -44,7 +45,7 @@ export async function getFriendRequests(): Promise<{
   sent: FriendRequest[];
 }> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -75,7 +76,7 @@ export async function getFriendRequests(): Promise<{
 // Get friend activity feed
 export async function getFriendActivity(limit: number = 50): Promise<FriendActivity[]> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -105,7 +106,7 @@ export async function sendFriendRequest(
   recipientHandle: string
 ): Promise<FriendRequest> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -180,7 +181,7 @@ export async function sendFriendRequest(
 // Accept a friend request
 export async function acceptFriendRequest(requestId: string): Promise<void> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -251,7 +252,7 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
 // Reject a friend request
 export async function rejectFriendRequest(requestId: string): Promise<void> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -271,7 +272,7 @@ export async function rejectFriendRequest(requestId: string): Promise<void> {
 // Remove a friend
 export async function removeFriend(friendId: string): Promise<void> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -296,7 +297,7 @@ export async function searchUsers(query: string): Promise<User[]> {
   }
 
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -319,7 +320,7 @@ export async function searchUsers(query: string): Promise<User[]> {
 // Mark activity as read
 export async function markActivityAsRead(activityId: string): Promise<void> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     throw new Error("User not authenticated");
@@ -339,7 +340,7 @@ export async function markActivityAsRead(activityId: string): Promise<void> {
 // Get unread activity count
 export async function getUnreadActivityCount(): Promise<number> {
   const { user } = await requireUser();
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (!user?.id) {
     return 0;
