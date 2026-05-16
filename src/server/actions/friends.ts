@@ -97,7 +97,7 @@ export async function getFriendActivity(limit: number = 50): Promise<FriendActiv
     throw error;
   }
 
-  return (data as FriendActivity[]) || [];
+  return (data as unknown as FriendActivity[]) || [];
 }
 
 // Send a friend request
