@@ -66,8 +66,8 @@ export async function getFriendRequests(): Promise<{
     throw error;
   }
 
-  const received = data.filter((req: any) => req.recipient_id === user.id);
-  const sent = data.filter((req: any) => req.sender_id === user.id);
+  const received = (data as any[]).filter((req: any) => req.recipient_id === user.id) as FriendRequest[];
+  const sent = (data as any[]).filter((req: any) => req.sender_id === user.id) as FriendRequest[];
 
   return { received, sent };
 }
@@ -174,7 +174,7 @@ export async function sendFriendRequest(
     throw error;
   }
 
-  return data;
+  return data as FriendRequest;
 }
 
 // Accept a friend request
