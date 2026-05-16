@@ -105,11 +105,11 @@ export function FriendActivity() {
                   addSuffix: true,
                 })}
               </p>
-              {(activity.metadata as Record<string, unknown> | undefined)?.albumName && (
+              {activity.metadata && "albumName" in activity.metadata && activity.metadata.albumName ? (
                 <Badge className="mt-2" variant="outline">
-                  {(activity.metadata as Record<string, unknown>).albumName as string}
+                  {String(activity.metadata.albumName)}
                 </Badge>
-              )}
+              ) : null}
             </div>
           </div>
         </Card>
