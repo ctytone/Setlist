@@ -26,3 +26,10 @@ export const searchSchema = z.object({
   type: z.enum(["album", "artist", "track"]).default("album"),
   limit: z.coerce.number().min(1).max(10).default(10),
 });
+
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(30)
+  .regex(/^[a-zA-Z0-9_]+$/, "Usernames can only contain letters, numbers, and underscores.");

@@ -30,6 +30,22 @@ export default async function SignUpPage({
           ) : null}
           <form action={signUpAction} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minLength={3}
+                maxLength={30}
+                autoComplete="username"
+                placeholder="yourname"
+              />
+              <p className="text-xs text-muted-foreground">
+                This will be your public profile username.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" required />
             </div>

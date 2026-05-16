@@ -53,11 +53,17 @@ export async function GET(request: Request) {
 
     // Use service role client to bypass RLS for this privileged operation
     const serviceRoleClient = createServiceRoleClient();
+    const { data: userProfile } = await serviceRoleClient
+      .from("users")
+      .select("handle, display_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
     const { error: userError } = await serviceRoleClient.from("users").upsert(
       {
         id: user.id,
-        handle: user.user_metadata?.user_name ?? null,
-        display_name: user.user_metadata?.full_name ?? null,
+        handle: userProfile?.handle ?? user.user_metadata?.user_name ?? null,
+        display_name: userProfile?.display_name ?? user.user_metadata?.full_name ?? null,
       },
       { onConflict: "id" },
     );

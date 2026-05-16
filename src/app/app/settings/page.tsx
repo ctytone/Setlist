@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { signOutAction, syncSavedAlbumsAction } from "@/server/actions/app-actions";
+import { signOutAction, syncSavedAlbumsAction, updateUsernameAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { cn } from "@/lib/utils";
 import LocalTime from "@/components/local-time";
@@ -16,7 +16,7 @@ export default async function SettingsPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: spotifyAccount }, { data: syncState }, { data: userSettings }] = await Promise.all([
+  const [{ data: spotifyAccount }, { data: syncState }, { data: userSettings }, { data: userProfile }] = await Promise.all([
     supabase
       .from("spotify_accounts")
       .select("spotify_user_id,spotify_display_name,updated_at")
@@ -29,6 +29,7 @@ export default async function SettingsPage({
       .eq("source", "spotify_saved_albums")
       .maybeSingle(),
     supabase.from("user_settings").select("song_ratings_public_default").eq("user_id", user.id).maybeSingle(),
+    supabase.from("users").select("handle").eq("id", user.id).maybeSingle(),
   ]);
 
   return (
@@ -43,6 +44,43 @@ export default async function SettingsPage({
           Spotify link result: {params.spotify}
         </p>
       ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Username</CardTitle>
+          <CardDescription>
+            This is the public name other users see when they find or add you.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <form action={updateUsernameAction} className="space-y-3 max-w-md">
+            <div className="space-y-2">
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minLength={3}
+                maxLength={30}
+                defaultValue={userProfile?.handle ?? ""}
+                placeholder="yourname"
+                autoComplete="username"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use letters, numbers, and underscores only.
+              </p>
+            </div>
+            {params.username ? (
+              <p className={`text-sm ${params.username === "updated" ? "text-green-600" : "text-destructive"}`}>
+                {params.username === "updated"
+                  ? "Username updated successfully."
+                  : decodeURIComponent(params.username)}
+              </p>
+            ) : null}
+            <Button type="submit">Save username</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

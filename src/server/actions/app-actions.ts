@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { songRatingSchema, statusSchema } from "@/lib/schemas";
+import { songRatingSchema, statusSchema, usernameSchema } from "@/lib/schemas";
 import { fetchSpotifyAlbumDetails, fetchSavedAlbumsPage } from "@/server/spotify";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { recalculateAlbumRating, upsertAlbumGraphForUser } from "@/server/library";
 import { requireUser } from "@/server/auth";
 
@@ -26,13 +26,36 @@ function getFormString(formData: FormData, key: string) {
 
 export async function signUpAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
+  const serviceRoleClient = createServiceRoleClient();
 
   const email = getFormString(formData, "email").trim();
   const password = getFormString(formData, "password");
+  const usernameResult = usernameSchema.safeParse(getFormString(formData, "username"));
+
+  if (!usernameResult.success) {
+    redirect(`/auth/sign-up?error=${encodeURIComponent(usernameResult.error.issues[0]?.message ?? "Invalid username.")}`);
+  }
+
+  const username = usernameResult.data;
+
+  const { data: existingUser } = await serviceRoleClient
+    .from("users")
+    .select("id")
+    .eq("handle", username)
+    .maybeSingle();
+
+  if (existingUser) {
+    redirect(`/auth/sign-up?error=${encodeURIComponent("That username is already taken.")}`);
+  }
 
   const { error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        user_name: username,
+      },
+    },
   });
 
   if (error) {
@@ -40,6 +63,54 @@ export async function signUpAction(formData: FormData) {
   }
 
   redirect("/app/albums");
+}
+
+export async function updateUsernameAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const serviceRoleClient = createServiceRoleClient();
+
+  const usernameResult = usernameSchema.safeParse(getFormString(formData, "username"));
+  if (!usernameResult.success) {
+    redirect(`/app/settings?username=${encodeURIComponent(usernameResult.error.issues[0]?.message ?? "Invalid username.")}`);
+  }
+
+  const username = usernameResult.data;
+
+  const { data: existingUser } = await serviceRoleClient
+    .from("users")
+    .select("id")
+    .eq("handle", username)
+    .neq("id", user.id)
+    .maybeSingle();
+
+  if (existingUser) {
+    redirect(`/app/settings?username=${encodeURIComponent("That username is already taken.")}`);
+  }
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: {
+      user_name: username,
+    },
+  });
+
+  if (authError) {
+    redirect(`/app/settings?username=${encodeURIComponent(authError.message)}`);
+  }
+
+  const { error: profileError } = await supabase.from("users").upsert(
+    {
+      id: user.id,
+      handle: username,
+    },
+    { onConflict: "id" },
+  );
+
+  if (profileError) {
+    redirect(`/app/settings?username=${encodeURIComponent(profileError.message)}`);
+  }
+
+  revalidatePath("/app/settings");
+  redirect("/app/settings?username=updated");
 }
 
 export async function signInAction(formData: FormData) {
