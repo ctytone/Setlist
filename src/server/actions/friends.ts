@@ -174,7 +174,7 @@ export async function sendFriendRequest(
     throw error;
   }
 
-  return data as FriendRequest;
+  return data as unknown as FriendRequest;
 }
 
 // Accept a friend request
