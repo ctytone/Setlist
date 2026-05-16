@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Music2, Search, BarChart3, Settings, Disc3 } from "lucide-react";
+import { Music2, Search, BarChart3, Settings, Disc3, Users } from "lucide-react";
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/app/albums", label: "Albums", icon: Disc3 },
   { href: "/app/search", label: "Search", icon: Search },
+  { href: "/app/friends", label: "Friends", icon: Users },
   { href: "/app/stats", label: "Stats", icon: BarChart3 },
   { href: "/app/settings", label: "Settings", icon: Settings },
 ];
