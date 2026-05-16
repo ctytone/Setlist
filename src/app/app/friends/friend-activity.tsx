@@ -6,7 +6,7 @@ import {
   getFriendActivity,
   markActivityAsRead,
 } from "@/server/actions/friends";
-import { FriendActivity } from "@/lib/types";
+import type { FriendActivity } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
