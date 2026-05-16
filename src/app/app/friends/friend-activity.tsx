@@ -107,7 +107,7 @@ export function FriendActivity() {
               </p>
               {activity.metadata?.albumName && (
                 <Badge className="mt-2" variant="outline">
-                  {activity.metadata.albumName}
+                  {activity.metadata.albumName as string}
                 </Badge>
               )}
             </div>
