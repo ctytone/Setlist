@@ -57,10 +57,14 @@ export function AddFriendDialog() {
         body: JSON.stringify({ recipientUserId: user.id }),
       });
 
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        details?: string;
+        hint?: string;
+      };
 
       if (!response.ok) {
-        throw new Error(payload.error || "Failed to send friend request");
+        throw new Error(payload.error || payload.details || payload.hint || "Failed to send friend request");
       }
 
       setResults(results.filter((u) => u.id !== user.id));

@@ -3,6 +3,21 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/server/auth";
 import { sendFriendRequest } from "@/server/actions/friends";
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.trim()) {
+      return maybeMessage;
+    }
+  }
+
+  return "Failed to send friend request";
+}
+
 export async function POST(request: Request) {
   const { user } = await requireUser();
 
@@ -21,7 +36,7 @@ export async function POST(request: Request) {
     const requestRecord = await sendFriendRequest(recipientUserId);
     return NextResponse.json({ request: requestRecord });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to send friend request";
+    const message = getErrorMessage(error);
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
