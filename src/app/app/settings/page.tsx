@@ -7,6 +7,7 @@ import { signOutAction, syncSavedAlbumsAction, updateUsernameAction } from "@/se
 import { requireUser } from "@/server/auth";
 import { cn } from "@/lib/utils";
 import LocalTime from "@/components/local-time";
+import { SyncLibraryButton } from "@/components/sync-library-button";
 
 export default async function SettingsPage({
   searchParams,
@@ -101,9 +102,7 @@ export default async function SettingsPage({
               Link Spotify
             </Link>
             <form action={syncSavedAlbumsAction}>
-              <Button type="submit" disabled={!spotifyAccount}>
-                Sync library
-              </Button>
+              {spotifyAccount ? <SyncLibraryButton /> : <Button type="submit" disabled>Sync library</Button>}
             </form>
           </div>
           <p>
