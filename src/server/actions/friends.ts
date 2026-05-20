@@ -39,7 +39,7 @@ export async function getFriendsList(): Promise<Friend[]> {
 
   if (error) {
     if (isMissingTableError(error)) {
-      return { received: [], sent: [] };
+      return [];
     }
 
     throw error;
