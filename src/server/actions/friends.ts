@@ -5,6 +5,17 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireUser } from "@/server/auth";
 import { Friend, FriendRequest, FriendActivity, User } from "@/lib/types";
 
+function isMissingTableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message = "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+
+  return code === "42P01" || message.includes("Could not find the table") || message.includes("schema cache");
+}
+
 // Get user's friends list with basic info
 export async function getFriendsList(): Promise<Friend[]> {
   const { user } = await requireUser();
@@ -27,6 +38,10 @@ export async function getFriendsList(): Promise<Friend[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+
     throw error;
   }
 
@@ -70,6 +85,10 @@ export async function getFriendRequests(): Promise<{
     .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+
     throw error;
   }
 
@@ -164,7 +183,9 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
   ]);
 
   if (activityError) {
-    throw activityError;
+    if (!isMissingTableError(activityError)) {
+      throw activityError;
+    }
   }
 
   return {
@@ -205,7 +226,9 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
     .eq("id", requestId);
 
   if (updateError) {
-    throw updateError;
+    if (!isMissingTableError(updateError)) {
+      throw updateError;
+    }
   }
 
   // Log activity for both users
@@ -227,7 +250,9 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
     ]);
 
   if (activityError) {
-    throw activityError;
+    if (!isMissingTableError(activityError)) {
+      throw activityError;
+    }
   }
 }
 
@@ -247,6 +272,10 @@ export async function rejectFriendRequest(requestId: string): Promise<void> {
     .eq("recipient_id", user.id);
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return;
+    }
+
     throw error;
   }
 }
@@ -450,6 +479,10 @@ export async function getUnreadActivityCount(): Promise<number> {
     .eq("is_read", false);
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+
     return 0;
   }
 
