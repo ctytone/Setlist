@@ -48,7 +48,7 @@ export function AddFriendDialog() {
 
   const handleSendRequest = async (user: User) => {
     try {
-      await sendFriendRequest(user.handle || "");
+      await sendFriendRequest(user.id);
       setResults(results.filter((u) => u.id !== user.id));
       toast({
         title: "Success",
