@@ -304,21 +304,6 @@ export async function searchUsers(query: string): Promise<User[]> {
     throw new Error("User not authenticated");
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, handle, display_name, avatar_url, created_at, updated_at")
-    .or(`handle.ilike.%${normalizedQuery}%,display_name.ilike.%${normalizedQuery}%`)
-    .neq("id", user.id)
-    .limit(10);
-
-  if (error) {
-    throw error;
-  }
-
-  if (data && data.length > 0) {
-    return data;
-  }
-
   const { data: authUsersResponse, error: authUsersError } = await supabase.auth.admin.listUsers({
     page: 1,
     perPage: 1000,
@@ -331,58 +316,118 @@ export async function searchUsers(query: string): Promise<User[]> {
   const authUsers = authUsersResponse?.users ?? [];
   const lowerQuery = normalizedQuery.toLowerCase();
 
-  const matches = authUsers
+  function pickString(...values: Array<unknown>) {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    return null;
+  }
+
+  function getAuthCandidate(authUser: any): User {
+    const metadata = authUser?.user_metadata ?? {};
+    const emailLocalPart = typeof authUser?.email === "string" ? authUser.email.split("@")[0] ?? "" : "";
+
+    const handle = pickString(
+      metadata.user_name,
+      metadata.username,
+      metadata.preferred_username,
+      metadata.nickname,
+      emailLocalPart,
+    );
+    const displayName = pickString(
+      metadata.full_name,
+      metadata.name,
+      metadata.display_name,
+      handle,
+    );
+
+    return {
+      id: authUser.id as string,
+      handle,
+      display_name: displayName,
+      avatar_url: pickString(metadata.avatar_url, metadata.picture),
+      created_at: authUser.created_at as string,
+      updated_at: authUser.updated_at as string,
+    };
+  }
+
+  const authMatches = authUsers
     .filter((authUser: any) => authUser.id !== user.id)
     .filter((authUser: any) => {
-      const handle = typeof authUser?.user_metadata?.user_name === "string"
-        ? authUser.user_metadata.user_name
-        : "";
-      const displayName = typeof authUser?.user_metadata?.full_name === "string"
-        ? authUser.user_metadata.full_name
-        : "";
+      const metadata = authUser?.user_metadata ?? {};
+      const handle = pickString(
+        metadata.user_name,
+        metadata.username,
+        metadata.preferred_username,
+        metadata.nickname,
+      ) ?? "";
+      const displayName = pickString(
+        metadata.full_name,
+        metadata.name,
+        metadata.display_name,
+      ) ?? "";
       const email = typeof authUser?.email === "string" ? authUser.email : "";
 
       return [handle, displayName, email].some((value) => value.toLowerCase().includes(lowerQuery));
     })
+    .map(getAuthCandidate)
     .slice(0, 10);
 
-  if (!matches.length) {
-    return [];
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, handle, display_name, avatar_url, created_at, updated_at")
+    .or(`handle.ilike.%${normalizedQuery}%,display_name.ilike.%${normalizedQuery}%`)
+    .neq("id", user.id)
+    .limit(10);
+
+  if (error) {
+    throw error;
   }
 
-  const backfilledUsers = matches.map((authUser: any) => ({
-    id: authUser.id as string,
-    handle:
-      typeof authUser?.user_metadata?.user_name === "string"
-        ? authUser.user_metadata.user_name
-        : null,
-    display_name:
-      typeof authUser?.user_metadata?.full_name === "string"
-        ? authUser.user_metadata.full_name
-        : null,
-    avatar_url:
-      typeof authUser?.user_metadata?.avatar_url === "string"
-        ? authUser.user_metadata.avatar_url
-        : null,
-    created_at: authUser.created_at as string,
-    updated_at: authUser.updated_at as string,
-  }));
+  const authById = new Map(authUsers.map((authUser: any) => [authUser.id, getAuthCandidate(authUser)]));
 
-  const { error: upsertError } = await supabase.from("users").upsert(
-    backfilledUsers.map((entry) => ({
+  const publicMatches = (data ?? []).map((entry) => {
+    const authMatch = authById.get(entry.id);
+
+    return {
+      ...entry,
+      handle: entry.handle ?? authMatch?.handle ?? null,
+      display_name: entry.display_name ?? authMatch?.display_name ?? null,
+      avatar_url: entry.avatar_url ?? authMatch?.avatar_url ?? null,
+    };
+  });
+
+  const merged = [...authMatches];
+
+  for (const entry of publicMatches) {
+    if (!merged.some((candidate) => candidate.id === entry.id)) {
+      merged.push(entry);
+    }
+  }
+
+  if (merged.length > 0) {
+    const upsertPayload = merged.map((entry) => ({
       id: entry.id,
       handle: entry.handle,
       display_name: entry.display_name,
       avatar_url: entry.avatar_url,
-    })),
-    { onConflict: "id" },
-  );
+    }));
 
-  if (upsertError) {
-    throw upsertError;
+    const { error: upsertError } = await supabase.from("users").upsert(upsertPayload, {
+      onConflict: "id",
+    });
+
+    if (upsertError) {
+      throw upsertError;
+    }
+
+    return merged;
   }
 
-  return backfilledUsers;
+  return [];
 }
 
 // Mark activity as read
