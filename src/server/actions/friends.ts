@@ -15,28 +15,34 @@ export async function getFriendsList(): Promise<Friend[]> {
   }
 
   const { data, error } = await supabase
-    .from("friends")
+    .from("friend_activity")
     .select(
       `
-      user_id_1, user_id_2,
-      users_1:user_id_1(id, handle, display_name, avatar_url, created_at, updated_at),
-      users_2:user_id_2(id, handle, display_name, avatar_url, created_at, updated_at)
+      actor_id,
+      actor:actor_id(id, handle, display_name, avatar_url, created_at, updated_at)
     `
     )
-    .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
+    .eq("user_id", user.id)
+    .eq("action", "friend_added")
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw error;
   }
 
-  // Normalize the result
-  const friends: Friend[] = data.map((row: any) => {
-    const friend =
-      row.user_id_1 === user.id ? row.users_2 : row.users_1;
-    return friend;
-  });
+  const friendsById = new Map<string, Friend>();
 
-  return friends;
+  for (const row of (data as any[]) || []) {
+    const friend = row.actor as Friend | undefined;
+
+    if (!friend || friendsById.has(friend.id)) {
+      continue;
+    }
+
+    friendsById.set(friend.id, friend);
+  }
+
+  return Array.from(friendsById.values());
 }
 
 // Get pending friend requests (both sent and received)
@@ -124,29 +130,21 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     throw new Error("User not found");
   }
 
-  const [userId1, userId2] =
-    user.id < recipientData.id ? [user.id, recipientData.id] : [recipientData.id, user.id];
-
   // Check if already friends
-  const { data: friendshipData } = await supabase
-    .from("friends")
+  const { data: existingActivity, error: existingActivityError } = await supabase
+    .from("friend_activity")
     .select("id")
     .or(
-      `and(user_id_1.eq.${userId1},user_id_2.eq.${userId2}),and(user_id_1.eq.${userId2},user_id_2.eq.${userId1})`
+      `and(user_id.eq.${user.id},actor_id.eq.${recipientData.id},action.eq.friend_added),and(user_id.eq.${recipientData.id},actor_id.eq.${user.id},action.eq.friend_added)`
     )
-    .single();
+    .limit(1);
 
-  if (friendshipData) {
-    throw new Error("Already friends with this user");
+  if (existingActivityError) {
+    throw existingActivityError;
   }
 
-  const { error: friendshipError } = await supabase.from("friends").insert({
-    user_id_1: userId1,
-    user_id_2: userId2,
-  });
-
-  if (friendshipError) {
-    throw friendshipError;
+  if ((existingActivity || []).length > 0) {
+    throw new Error("Already friends with this user");
   }
 
   const now = new Date().toISOString();
@@ -198,23 +196,6 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
 
   if (requestError || !request) {
     throw new Error("Friend request not found");
-  }
-
-  // Create friendship (ensure consistent ordering)
-  const [userId1, userId2] =
-    request.sender_id < request.recipient_id
-      ? [request.sender_id, request.recipient_id]
-      : [request.recipient_id, request.sender_id];
-
-  const { error: friendshipError } = await supabase
-    .from("friends")
-    .insert({
-      user_id_1: userId1,
-      user_id_2: userId2,
-    });
-
-  if (friendshipError) {
-    throw friendshipError;
   }
 
   // Update request status
@@ -280,10 +261,10 @@ export async function removeFriend(friendId: string): Promise<void> {
   }
 
   const { error } = await supabase
-    .from("friends")
+    .from("friend_activity")
     .delete()
     .or(
-      `and(user_id_1.eq.${user.id},user_id_2.eq.${friendId}),and(user_id_1.eq.${friendId},user_id_2.eq.${user.id})`
+      `and(user_id.eq.${user.id},actor_id.eq.${friendId},action.eq.friend_added),and(user_id.eq.${friendId},actor_id.eq.${user.id},action.eq.friend_added)`
     );
 
   if (error) {
