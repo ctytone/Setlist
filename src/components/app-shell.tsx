@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Music2, Search, BarChart3, Settings, Disc3, Users } from "lucide-react";
+import { Music2, Search, Bell, BarChart3, Settings, Disc3, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: "/app/albums", label: "Albums", icon: Disc3 },
   { href: "/app/search", label: "Search", icon: Search },
   { href: "/app/friends", label: "Friends", icon: Users },
+  { href: "/app/notifications", label: "Notifications", icon: Bell },
   { href: "/app/stats", label: "Stats", icon: BarChart3 },
   { href: "/app/settings", label: "Settings", icon: Settings },
 ];
@@ -18,7 +19,7 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <div className={mobile ? "grid grid-cols-5 gap-1" : "flex items-center gap-1"}>
+    <div className={mobile ? "grid grid-cols-6 gap-1" : "flex items-center gap-1"}>
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
