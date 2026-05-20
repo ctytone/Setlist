@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { sendFriendRequest, searchUsers } from "@/server/actions/friends";
+import { searchUsers } from "@/server/actions/friends";
 import { User } from "@/lib/types";
 import Image from "next/image";
 import { Plus, Search } from "lucide-react";
@@ -22,6 +22,7 @@ export function AddFriendDialog() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendingUserId, setSendingUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSearch = async (query: string) => {
@@ -48,7 +49,20 @@ export function AddFriendDialog() {
 
   const handleSendRequest = async (user: User) => {
     try {
-      await sendFriendRequest(user.id);
+      setSendingUserId(user.id);
+
+      const response = await fetch("/api/friends/request", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ recipientUserId: user.id }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to send friend request");
+      }
+
       setResults(results.filter((u) => u.id !== user.id));
       toast({
         title: "Success",
@@ -60,6 +74,8 @@ export function AddFriendDialog() {
         description: error.message || "Failed to send friend request",
         variant: "destructive",
       });
+    } finally {
+      setSendingUserId(null);
     }
   };
 
@@ -130,10 +146,12 @@ export function AddFriendDialog() {
                   </div>
                   <Button
                     size="sm"
+                    type="button"
+                    disabled={sendingUserId === user.id}
                     onClick={() => handleSendRequest(user)}
                     className="ml-2"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className={`h-4 w-4 ${sendingUserId === user.id ? "animate-spin" : ""}`} />
                   </Button>
                 </div>
               ))
