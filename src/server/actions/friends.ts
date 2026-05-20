@@ -291,7 +291,9 @@ export async function removeFriend(friendId: string): Promise<void> {
 
 // Search for users to add as friends
 export async function searchUsers(query: string): Promise<User[]> {
-  if (query.length < 2) {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length < 2) {
     return [];
   }
 
@@ -305,7 +307,7 @@ export async function searchUsers(query: string): Promise<User[]> {
   const { data, error } = await supabase
     .from("users")
     .select("id, handle, display_name, avatar_url, created_at, updated_at")
-    .or(`handle.ilike.%${query}%,display_name.ilike.%${query}%`)
+    .or(`handle.ilike.%${normalizedQuery}%,display_name.ilike.%${normalizedQuery}%`)
     .neq("id", user.id)
     .limit(10);
 
@@ -313,7 +315,74 @@ export async function searchUsers(query: string): Promise<User[]> {
     throw error;
   }
 
-  return data || [];
+  if (data && data.length > 0) {
+    return data;
+  }
+
+  const { data: authUsersResponse, error: authUsersError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  if (authUsersError) {
+    throw authUsersError;
+  }
+
+  const authUsers = authUsersResponse?.users ?? [];
+  const lowerQuery = normalizedQuery.toLowerCase();
+
+  const matches = authUsers
+    .filter((authUser: any) => authUser.id !== user.id)
+    .filter((authUser: any) => {
+      const handle = typeof authUser?.user_metadata?.user_name === "string"
+        ? authUser.user_metadata.user_name
+        : "";
+      const displayName = typeof authUser?.user_metadata?.full_name === "string"
+        ? authUser.user_metadata.full_name
+        : "";
+      const email = typeof authUser?.email === "string" ? authUser.email : "";
+
+      return [handle, displayName, email].some((value) => value.toLowerCase().includes(lowerQuery));
+    })
+    .slice(0, 10);
+
+  if (!matches.length) {
+    return [];
+  }
+
+  const backfilledUsers = matches.map((authUser: any) => ({
+    id: authUser.id as string,
+    handle:
+      typeof authUser?.user_metadata?.user_name === "string"
+        ? authUser.user_metadata.user_name
+        : null,
+    display_name:
+      typeof authUser?.user_metadata?.full_name === "string"
+        ? authUser.user_metadata.full_name
+        : null,
+    avatar_url:
+      typeof authUser?.user_metadata?.avatar_url === "string"
+        ? authUser.user_metadata.avatar_url
+        : null,
+    created_at: authUser.created_at as string,
+    updated_at: authUser.updated_at as string,
+  }));
+
+  const { error: upsertError } = await supabase.from("users").upsert(
+    backfilledUsers.map((entry) => ({
+      id: entry.id,
+      handle: entry.handle,
+      display_name: entry.display_name,
+      avatar_url: entry.avatar_url,
+    })),
+    { onConflict: "id" },
+  );
+
+  if (upsertError) {
+    throw upsertError;
+  }
+
+  return backfilledUsers;
 }
 
 // Mark activity as read
