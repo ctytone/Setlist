@@ -39,7 +39,7 @@ export async function getFriendsList(): Promise<Friend[]> {
 
   if (error) {
     if (isMissingTableError(error)) {
-      return [];
+      return { received: [], sent: [] };
     }
 
     throw error;
@@ -120,6 +120,10 @@ export async function getFriendActivity(limit: number = 50): Promise<FriendActiv
     .limit(limit);
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+
     throw error;
   }
 
@@ -297,6 +301,10 @@ export async function removeFriend(friendId: string): Promise<void> {
     );
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return;
+    }
+
     throw error;
   }
 }
@@ -397,6 +405,10 @@ export async function searchUsers(query: string): Promise<User[]> {
     .limit(10);
 
   if (error) {
+    if (isMissingTableError(error)) {
+      return;
+    }
+
     throw error;
   }
 
