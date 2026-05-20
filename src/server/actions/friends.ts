@@ -163,7 +163,10 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     .limit(1);
 
   if (existingActivityError) {
-    throw existingActivityError;
+    if (!isMissingTableError(existingActivityError)) {
+      throw existingActivityError;
+    }
+    // If the friend_activity table is missing, assume no existing friendship and continue.
   }
 
   if ((existingActivity || []).length > 0) {
