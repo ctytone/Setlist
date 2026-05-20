@@ -11,9 +11,9 @@ export function FriendRequests() {
           <Bell className="h-4 w-4" />
         </div>
         <div className="space-y-1">
-          <p className="font-medium">Friend requests are immediate</p>
+          <p className="font-medium">Pending friend requests</p>
           <p className="text-sm text-muted-foreground">
-            This app adds friends directly and records the event in activity instead of storing pending requests.
+            Send a request and the recipient can accept or reject it. Pending requests are listed here for your review.
           </p>
         </div>
       </div>

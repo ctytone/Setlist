@@ -23,6 +23,7 @@ export function AddFriendDialog() {
   const [results, setResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendingUserId, setSendingUserId] = useState<string | null>(null);
+  const [pendingUserIds, setPendingUserIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleSearch = async (query: string) => {
@@ -67,10 +68,11 @@ export function AddFriendDialog() {
         throw new Error(payload.error || payload.details || payload.hint || "Failed to send friend request");
       }
 
-      setResults(results.filter((u) => u.id !== user.id));
+      // Mark as pending so the recipient can accept the request
+      setPendingUserIds((prev) => [...prev, user.id]);
       toast({
-        title: "Success",
-        description: `Friend added: ${user.display_name || user.handle}`,
+        title: "Request Sent",
+        description: `Friend request sent to ${user.display_name || user.handle}`,
       });
     } catch (error: any) {
       toast({
@@ -148,15 +150,22 @@ export function AddFriendDialog() {
                       )}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    type="button"
-                    disabled={sendingUserId === user.id}
-                    onClick={() => handleSendRequest(user)}
-                    className="ml-2"
-                  >
-                    <Plus className={`h-4 w-4 ${sendingUserId === user.id ? "animate-spin" : ""}`} />
-                  </Button>
+                  <div className="ml-2">
+                    {pendingUserIds.includes(user.id) ? (
+                      <Button size="sm" disabled>
+                        Pending
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        type="button"
+                        disabled={sendingUserId === user.id}
+                        onClick={() => handleSendRequest(user)}
+                      >
+                        <Plus className={`h-4 w-4 ${sendingUserId === user.id ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
