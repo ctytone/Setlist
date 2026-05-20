@@ -123,6 +123,8 @@
   }
   body {
     @apply bg-background text-foreground selection:bg-primary/20 selection:text-foreground;
+    min-height: 100dvh;
+    overflow-x: hidden;
     background-image:
       radial-gradient(circle at 15% -5%, oklch(0.93 0.045 35 / 0.45), transparent 35%),
       radial-gradient(circle at 90% 110%, oklch(0.9 0.03 58 / 0.35), transparent 30%);

@@ -1,8 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Music2, Search, BarChart3, Settings, Disc3, Users } from "lucide-react";
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/app/albums", label: "Albums", icon: Disc3 },
@@ -12,20 +14,31 @@ const navItems = [
   { href: "/app/settings", label: "Settings", icon: Settings },
 ];
 
-function NavLinks() {
+function NavLinks({ mobile = false }: { mobile?: boolean }) {
+  const pathname = usePathname();
+
   return (
-    <div className="flex items-center gap-1">
+    <div className={mobile ? "grid grid-cols-5 gap-1" : "flex items-center gap-1"}>
       {navItems.map((item) => {
         const Icon = item.icon;
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link
             key={item.href}
             href={item.href}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              mobile
+                ? "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] leading-tight transition-colors"
+                : "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors",
+              active
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
           >
             <Icon className="h-4 w-4" />
-            {item.label}
+            <span>{item.label}</span>
           </Link>
         );
       })}
@@ -35,9 +48,9 @@ function NavLinks() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
-        <div className="container mx-auto flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="container mx-auto flex min-h-16 items-center justify-between gap-4 px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 lg:px-8">
           <Link href="/app/albums" className="inline-flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary">
               <Music2 className="h-4 w-4" />
@@ -47,21 +60,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="hidden md:block">
             <NavLinks />
           </div>
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger render={<Button size="sm" variant="outline" />}>
-                Menu
-              </SheetTrigger>
-              <SheetContent side="right">
-                <div className="mt-8">
-                  <NavLinks />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      <main className="container mx-auto px-4 py-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 md:pb-6">
+        {children}
+      </main>
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 backdrop-blur md:hidden">
+        <div className="mx-auto max-w-5xl px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <NavLinks mobile />
+        </div>
+      </nav>
     </div>
   );
 }

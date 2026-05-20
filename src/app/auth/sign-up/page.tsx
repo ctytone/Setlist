@@ -14,7 +14,7 @@ export default async function SignUpPage({
   const params = await searchParams;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center py-10">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-4 py-10 sm:px-0">
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Create account</CardTitle>

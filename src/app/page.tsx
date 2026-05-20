@@ -13,7 +13,7 @@ const highlights = [
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden bg-background text-foreground">
       <div className="hero-glow" />
       <main className="container relative mx-auto flex flex-1 flex-col px-4 py-10 sm:px-6 lg:px-8">
         <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-8 py-10 md:py-16">
