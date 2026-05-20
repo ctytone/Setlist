@@ -1,17 +1,9 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FriendActivity } from "./friend-activity";
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell } from "lucide-react";
 
 export function FriendRequests() {
-  const { toast } = useToast();
-
   return (
     <Card className="p-6">
       <div className="flex items-start gap-3">
