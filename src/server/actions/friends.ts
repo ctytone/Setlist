@@ -174,6 +174,46 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
   }
 
   const now = new Date().toISOString();
+
+  // First try to create a pending friend request record (preferred).
+  try {
+    const { data: insertedRequests, error: requestInsertError } = await supabase
+      .from("friend_requests")
+      .insert([
+        {
+          sender_id: user.id,
+          recipient_id: recipientData.id,
+          status: "pending",
+          created_at: now,
+          updated_at: now,
+        },
+      ])
+      .select();
+
+    if (requestInsertError) {
+      if (!isMissingTableError(requestInsertError)) {
+        throw requestInsertError;
+      }
+      // if table is missing, fall through to activity fallback
+    } else if (insertedRequests && (insertedRequests as any[]).length > 0) {
+      const inserted = (insertedRequests as any[])[0];
+      return {
+        id: inserted.id,
+        sender_id: inserted.sender_id,
+        recipient_id: inserted.recipient_id,
+        status: inserted.status,
+        created_at: inserted.created_at,
+        updated_at: inserted.updated_at,
+      } as FriendRequest;
+    }
+  } catch (err) {
+    if (!isMissingTableError(err)) {
+      throw err;
+    }
+    // otherwise continue to fallback
+  }
+
+  // Fallback: record the event in the activity feed so the recipient sees it.
   const { error: activityError } = await supabase.from("friend_activity").insert([
     {
       user_id: user.id,
@@ -193,6 +233,9 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     if (!isMissingTableError(activityError)) {
       throw activityError;
     }
+
+    // If both tables are missing, we cannot record the request; surface an error so the UI can inform the user.
+    throw new Error("Could not record friend request: missing friend_requests and friend_activity tables. Apply migrations to enable friend requests.");
   }
 
   return {
