@@ -39,7 +39,7 @@ export async function getFriendsList(): Promise<Friend[]> {
 
   if (error) {
     if (isMissingTableError(error)) {
-      return { received: [], sent: [] };
+      return [] as Friend[];
     }
 
     throw error;
@@ -86,7 +86,7 @@ export async function getFriendRequests(): Promise<{
 
   if (error) {
     if (isMissingTableError(error)) {
-      return [];
+      return { received: [] as FriendRequest[], sent: [] as FriendRequest[] };
     }
 
     throw error;
@@ -121,7 +121,7 @@ export async function getFriendActivity(limit: number = 50): Promise<FriendActiv
 
   if (error) {
     if (isMissingTableError(error)) {
-      return [];
+      return [] as FriendActivity[];
     }
 
     throw error;
@@ -406,7 +406,7 @@ export async function searchUsers(query: string): Promise<User[]> {
 
   if (error) {
     if (isMissingTableError(error)) {
-      return;
+      return [] as User[];
     }
 
     throw error;
