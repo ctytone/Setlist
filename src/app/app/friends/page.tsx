@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FriendsList } from "./friends-list";
-import { FriendRequests } from "./friend-requests";
+import FriendRequests from "./friend-requests";
 import { FriendActivity } from "./friend-activity";
 import { AddFriendDialog } from "./add-friend-dialog";
 

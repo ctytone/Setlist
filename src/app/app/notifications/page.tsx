@@ -1,5 +1,5 @@
 import { FriendActivity } from "../friends/friend-activity";
-import { FriendRequests } from "../friends/friend-requests";
+import FriendRequests from "../friends/friend-requests";
 
 export default function NotificationsPage() {
   return (

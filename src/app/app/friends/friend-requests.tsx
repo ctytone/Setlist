@@ -1,24 +1,55 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { getFriendRequests } from "@/server/actions/friends";
 import { FriendRequestsClient } from "./friend-requests-client";
 
-export async function FriendRequests() {
-  let received = [] as any[];
+export default function FriendRequests() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  try {
-    const resp = await getFriendRequests();
-    received = resp.received || [];
-  } catch (err: any) {
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/friends/list");
+        const payload = await res.json();
+        if (!res.ok) {
+          setError(payload?.error || "Failed to load requests");
+          setRequests([]);
+        } else {
+          setRequests(payload.received || []);
+        }
+      } catch (err: any) {
+        setError(err?.message || String(err));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
     return (
       <Card className="p-6">
-        <div className="space-y-2">
-          <div>
-            <h2 className="text-lg font-medium">Pending friend requests</h2>
-            <p className="text-sm text-muted-foreground">Requests sent to you that are awaiting your response.</p>
-          </div>
+        <div className="text-sm text-muted-foreground">Loading requests…</div>
+      </Card>
+    );
+  }
 
-          <div className="text-sm text-destructive">Error loading requests: {String(err?.message ?? err)}</div>
-          <div className="text-xs text-muted-foreground">Check the server logs or run the verification queries in the SQL editor.</div>
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div>
+          <h2 className="text-lg font-medium">Pending friend requests</h2>
+          <p className="text-sm text-destructive">Error loading requests: {error}</p>
         </div>
       </Card>
     );
@@ -32,10 +63,8 @@ export async function FriendRequests() {
           <p className="text-sm text-muted-foreground">Requests sent to you that are awaiting your response.</p>
         </div>
 
-        <FriendRequestsClient requests={received} />
+        <FriendRequestsClient requests={requests} />
       </div>
     </Card>
   );
 }
-
-export default FriendRequests;
