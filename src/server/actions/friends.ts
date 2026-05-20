@@ -124,12 +124,15 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     throw new Error("User not found");
   }
 
+  const [userId1, userId2] =
+    user.id < recipientData.id ? [user.id, recipientData.id] : [recipientData.id, user.id];
+
   // Check if already friends
   const { data: friendshipData } = await supabase
     .from("friends")
     .select("id")
     .or(
-      `and(user_id_1.eq.${user.id},user_id_2.eq.${recipientData.id}),and(user_id_1.eq.${recipientData.id},user_id_2.eq.${user.id})`
+      `and(user_id_1.eq.${userId1},user_id_2.eq.${userId2}),and(user_id_1.eq.${userId2},user_id_2.eq.${userId1})`
     )
     .single();
 
@@ -137,42 +140,43 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     throw new Error("Already friends with this user");
   }
 
-  // Check if request already exists
-  const { data: existingRequest } = await supabase
-    .from("friend_requests")
-    .select("id")
-    .or(
-      `and(sender_id.eq.${user.id},recipient_id.eq.${recipientData.id}),and(sender_id.eq.${recipientData.id},recipient_id.eq.${user.id})`
-    )
-    .eq("status", "pending")
-    .single();
+  const { error: friendshipError } = await supabase.from("friends").insert({
+    user_id_1: userId1,
+    user_id_2: userId2,
+  });
 
-  if (existingRequest) {
-    throw new Error("Friend request already exists");
+  if (friendshipError) {
+    throw friendshipError;
   }
 
-  // Create friend request
-  const { data, error } = await supabase
-    .from("friend_requests")
-    .insert({
-      sender_id: user.id,
-      recipient_id: recipientData.id,
-      status: "pending",
-    })
-    .select(
-      `
-      id, sender_id, recipient_id, status, created_at, updated_at,
-      sender:sender_id(id, handle, display_name, avatar_url, created_at, updated_at),
-      recipient:recipient_id(id, handle, display_name, avatar_url, created_at, updated_at)
-    `
-    )
-    .single();
+  const now = new Date().toISOString();
+  const { error: activityError } = await supabase.from("friend_activity").insert([
+    {
+      user_id: user.id,
+      actor_id: recipientData.id,
+      action: "friend_added",
+      created_at: now,
+    },
+    {
+      user_id: recipientData.id,
+      actor_id: user.id,
+      action: "friend_added",
+      created_at: now,
+    },
+  ]);
 
-  if (error) {
-    throw error;
+  if (activityError) {
+    throw activityError;
   }
 
-  return data as unknown as FriendRequest;
+  return {
+    id: crypto.randomUUID(),
+    sender_id: user.id,
+    recipient_id: recipientData.id,
+    status: "accepted",
+    created_at: now,
+    updated_at: now,
+  } as FriendRequest;
 }
 
 // Accept a friend request

@@ -70,7 +70,7 @@ export function AddFriendDialog() {
       setResults(results.filter((u) => u.id !== user.id));
       toast({
         title: "Success",
-        description: `Friend request sent to ${user.display_name || user.handle}`,
+        description: `Friend added: ${user.display_name || user.handle}`,
       });
     } catch (error: any) {
       toast({
