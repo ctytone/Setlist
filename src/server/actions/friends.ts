@@ -169,6 +169,24 @@ export async function sendFriendRequest(recipientUserId: string): Promise<Friend
     // If the friend_activity table is missing, assume no existing friendship and continue.
   }
 
+  // Check for an existing pending friend request (sender -> recipient)
+  const { data: existingRequest, error: existingRequestError } = await supabase
+    .from("friend_requests")
+    .select("id, sender_id, recipient_id, status, created_at, updated_at")
+    .eq("sender_id", user.id)
+    .eq("recipient_id", recipientData.id)
+    .maybeSingle();
+
+  if (existingRequestError) {
+    if (!isMissingTableError(existingRequestError)) {
+      throw existingRequestError;
+    }
+    // If the table is missing, we'll fall back later.
+  } else if (existingRequest) {
+    // A pending/previous request already exists.
+    throw new Error("Friend request already sent");
+  }
+
   if ((existingActivity || []).length > 0) {
     throw new Error("Already friends with this user");
   }
