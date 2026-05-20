@@ -102,9 +102,7 @@ export async function getFriendActivity(limit: number = 50): Promise<FriendActiv
 }
 
 // Send a friend request
-export async function sendFriendRequest(
-  recipientUserId: string
-): Promise<FriendRequest> {
+export async function sendFriendRequest(recipientUserId: string): Promise<FriendRequest> {
   const { user } = await requireUser();
   const supabase = createServiceRoleClient();
 
@@ -112,18 +110,18 @@ export async function sendFriendRequest(
     throw new Error("User not authenticated");
   }
 
+  if (recipientUserId === user.id) {
+    throw new Error("Cannot send friend request to yourself");
+  }
+
   const { data: recipientData, error: recipientError } = await supabase
     .from("users")
     .select("id")
     .eq("id", recipientUserId)
-    .single();
+    .maybeSingle();
 
   if (recipientError || !recipientData) {
     throw new Error("User not found");
-  }
-
-  if (recipientData.id === user.id) {
-    throw new Error("Cannot send friend request to yourself");
   }
 
   // Check if already friends
@@ -374,6 +372,7 @@ export async function searchUsers(query: string): Promise<User[]> {
       return [handle, displayName, email].some((value) => value.toLowerCase().includes(lowerQuery));
     })
     .map(getAuthCandidate)
+    .filter((candidate: User) => Boolean(candidate.handle || candidate.display_name))
     .slice(0, 10);
 
   const { data, error } = await supabase
@@ -398,7 +397,7 @@ export async function searchUsers(query: string): Promise<User[]> {
       display_name: entry.display_name ?? authMatch?.display_name ?? null,
       avatar_url: entry.avatar_url ?? authMatch?.avatar_url ?? null,
     };
-  });
+  }).filter((entry) => Boolean(entry.handle || entry.display_name));
 
   const merged = [...authMatches];
 
