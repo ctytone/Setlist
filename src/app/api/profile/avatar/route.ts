@@ -3,6 +3,26 @@ import sharp from "sharp";
 
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 
+async function ensureAvatarBucketExists(serviceRoleClient: ReturnType<typeof createServiceRoleClient>) {
+  const { error: bucketLookupError } = await serviceRoleClient.storage.getBucket("avatars");
+
+  if (!bucketLookupError) {
+    return;
+  }
+
+  const { error: createBucketError } = await serviceRoleClient.storage.createBucket("avatars", {
+    public: true,
+  });
+
+  if (createBucketError) {
+    const message = getErrorMessage(createBucketError);
+
+    if (!message.toLowerCase().includes("already exists")) {
+      throw createBucketError;
+    }
+  }
+}
+
 function getAvatarObjectPath(avatarUrl: string | null | undefined) {
   if (!avatarUrl) {
     return null;
@@ -71,6 +91,12 @@ export async function POST(request: Request) {
 
   if (profileLookupError) {
     return NextResponse.json({ error: getErrorMessage(profileLookupError) }, { status: 400 });
+  }
+
+  try {
+    await ensureAvatarBucketExists(serviceRoleClient);
+  } catch (error) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 400 });
   }
 
   let avatarBuffer: Buffer;
