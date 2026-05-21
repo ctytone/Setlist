@@ -50,6 +50,10 @@ function getAvatarObjectPath(avatarUrl: string | null | undefined) {
   }
 }
 
+function redirectWithAvatarError(message: string): never {
+  redirect(`/app/settings?avatar=${encodeURIComponent(message)}`);
+}
+
 type SongRatingRow = {
   track_id: string;
   tracks:
@@ -200,7 +204,7 @@ export async function updateAvatarAction(formData: FormData) {
     .maybeSingle();
 
   if (profileLookupError) {
-    throw profileLookupError;
+    redirectWithAvatarError(profileLookupError.message);
   }
 
   let avatarBuffer: Buffer;
@@ -225,7 +229,7 @@ export async function updateAvatarAction(formData: FormData) {
     });
 
   if (uploadError) {
-    throw uploadError;
+    redirectWithAvatarError(uploadError.message);
   }
 
   const { data: publicUrlData } = serviceRoleClient.storage
@@ -256,7 +260,7 @@ export async function updateAvatarAction(formData: FormData) {
   );
 
   if (profileError) {
-    throw profileError;
+    redirectWithAvatarError(profileError.message);
   }
 
   const previousAvatarPath = getAvatarObjectPath(existingProfile?.avatar_url);
