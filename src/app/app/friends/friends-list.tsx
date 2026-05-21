@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { getFriendsList, removeFriend } from "@/server/actions/friends";
 import { Friend } from "@/lib/types";
@@ -79,7 +80,7 @@ export function FriendsList() {
           key={friend.id}
           className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Link href={`/app/friends/${friend.id}`} className="flex items-center gap-3 flex-1 min-w-0 text-left">
             {friend.avatar_url ? (
               <Image
                 src={friend.avatar_url}
@@ -101,7 +102,7 @@ export function FriendsList() {
                 </p>
               )}
             </div>
-          </div>
+          </Link>
           <Button
             variant="ghost"
             size="sm"

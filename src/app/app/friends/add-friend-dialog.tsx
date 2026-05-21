@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -127,7 +128,7 @@ export function AddFriendDialog() {
                   key={user.id}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50"
                 >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Link href={`/app/friends/${user.id}`} className="flex items-center gap-2 flex-1 min-w-0">
                     {user.avatar_url ? (
                       <Image
                         src={user.avatar_url}
@@ -149,7 +150,7 @@ export function AddFriendDialog() {
                         </p>
                       )}
                     </div>
-                  </div>
+                  </Link>
                   <div className="ml-2">
                     {pendingUserIds.includes(user.id) ? (
                       <Button size="sm" disabled>

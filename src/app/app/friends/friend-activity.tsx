@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import {
   getFriendActivity,
@@ -80,26 +81,40 @@ export function FriendActivity() {
           className={`p-4 ${activity.is_read ? "opacity-60" : "bg-muted/50"}`}
         >
           <div className="flex items-start gap-3">
-            {activity.actor?.avatar_url ? (
-              <Image
-                src={activity.actor.avatar_url}
-                alt={activity.actor.display_name || activity.actor.handle || "User"}
-                width={40}
-                height={40}
-                className="rounded-full mt-1"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-muted mt-1" />
-            )}
+            <Link href={activity.actor ? `/app/friends/${activity.actor.id}` : "#"} className="mt-1 shrink-0">
+              {activity.actor?.avatar_url ? (
+                <Image
+                  src={activity.actor.avatar_url}
+                  alt={activity.actor.display_name || activity.actor.handle || "User"}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-muted" />
+              )}
+            </Link>
             <div className="flex-1 min-w-0">
+              {(() => {
+                const actorName = activity.actor?.display_name || activity.actor?.handle || "Unknown user";
+
+                return (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">
-                  {activity.actor?.display_name || activity.actor?.handle}
-                </span>
+                {activity.actor ? (
+                  <Link href={`/app/friends/${activity.actor.id}`} className="font-medium hover:underline">
+                    {actorName}
+                  </Link>
+                ) : (
+                  <span className="font-medium">
+                    {actorName}
+                  </span>
+                )}
                 <span className="text-muted-foreground">
                   {ACTION_LABELS[activity.action] || activity.action}
                 </span>
               </div>
+                );
+              })()}
               <p className="text-sm text-muted-foreground">
                 {formatDistanceToNow(new Date(activity.created_at), {
                   addSuffix: true,
