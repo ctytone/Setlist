@@ -52,12 +52,37 @@ function getAvatarObjectPath(avatarUrl: string | null | undefined) {
 
 type SongRatingRow = {
   track_id: string;
-  tracks: { id: string; name: string; duration_ms: number | null; artists: unknown } | null;
+  tracks:
+    | Array<{
+        id: string;
+        name: string;
+        duration_ms: number | null;
+        artists: Array<{ name: string }> | { name: string } | null;
+      }>
+    | null;
 };
 
 type AlbumTrackRow = {
   track_id: string;
-  albums: { id: string; name: string; cover_url: string | null } | null;
+  albums:
+    | Array<{
+        id: string;
+        name: string;
+        cover_url: string | null;
+      }>
+    | null;
+};
+
+type SongResult = {
+  id: string;
+  name: string;
+  duration_ms: number | null;
+  artists: Array<{ name: string }> | { name: string } | null;
+  album: {
+    id: string;
+    name: string;
+    cover_url: string | null;
+  } | null;
 };
 
 export async function signUpAction(formData: FormData) {
@@ -468,15 +493,16 @@ export async function getSongsByRatingAction(rating: number) {
 
   const albumMap = new Map<string, AlbumTrackRow["albums"]>();
   (albumTracks ?? []).forEach((row) => {
-    const typedRow = row as AlbumTrackRow;
+    const typedRow = row as unknown as AlbumTrackRow;
     albumMap.set(typedRow.track_id, typedRow.albums);
   });
 
   return typedRatings
     .map((row) => {
-      const track = row.tracks;
+      const track = Array.isArray(row.tracks) ? row.tracks[0] ?? null : row.tracks;
       const artists = track?.artists;
-      const album = albumMap.get(row.track_id);
+      const albumRelation = albumMap.get(row.track_id);
+      const album = Array.isArray(albumRelation) ? albumRelation[0] ?? null : albumRelation;
 
       return {
         id: track?.id,
@@ -484,7 +510,7 @@ export async function getSongsByRatingAction(rating: number) {
         duration_ms: track?.duration_ms,
         artists,
         album,
-      };
+      } as SongResult;
     })
-    .filter((item): item is { id: string; name: string; duration_ms: number | null; artists: unknown; album: AlbumTrackRow["albums"] } => Boolean(item.id));
+    .filter((item): item is SongResult => Boolean(item.id));
 }
