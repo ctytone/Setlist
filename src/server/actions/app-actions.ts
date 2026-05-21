@@ -1,5 +1,6 @@
 "use server";
 
+import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -11,18 +12,53 @@ import { requireUser } from "@/server/auth";
 
 function getFormString(formData: FormData, key: string) {
   // Try standard name first
-  let value = formData.get(key);
+  const value = formData.get(key);
   if (value) return typeof value === "string" ? value : "";
-  
+
   // Next.js 16 form serialization: try numbered variants (1_email, 2_password, etc.)
   for (const [k, v] of formData.entries()) {
     if (k.endsWith(`_${key}`)) {
       return typeof v === "string" ? v : "";
     }
   }
-  
+
   return "";
 }
+
+function getFormFile(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
+function getAvatarObjectPath(avatarUrl: string | null | undefined) {
+  if (!avatarUrl) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(avatarUrl);
+    const prefix = "/storage/v1/object/public/avatars/";
+
+    if (!parsed.pathname.startsWith(prefix)) {
+      return null;
+    }
+
+    return decodeURIComponent(parsed.pathname.slice(prefix.length));
+  } catch {
+    return null;
+  }
+}
+
+type SongRatingRow = {
+  track_id: string;
+  tracks: { id: string; name: string; duration_ms: number | null; artists: unknown } | null;
+};
+
+type AlbumTrackRow = {
+  track_id: string;
+  albums: { id: string; name: string; cover_url: string | null } | null;
+};
 
 export async function signUpAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
@@ -101,6 +137,7 @@ export async function updateUsernameAction(formData: FormData) {
     {
       id: user.id,
       handle: username,
+      updated_at: new Date().toISOString(),
     },
     { onConflict: "id" },
   );
@@ -113,13 +150,108 @@ export async function updateUsernameAction(formData: FormData) {
   redirect("/app/settings?username=updated");
 }
 
+export async function updateAvatarAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const serviceRoleClient = createServiceRoleClient();
+
+  const avatar = getFormFile(formData, "avatar");
+
+  if (!avatar) {
+    redirect(`/app/settings?avatar=${encodeURIComponent("Please choose an image file.")}`);
+  }
+
+  if (!avatar.type.startsWith("image/")) {
+    redirect(`/app/settings?avatar=${encodeURIComponent("Please upload a JPG, PNG, WebP, or HEIC image.")}`);
+  }
+
+  if (avatar.size > 10 * 1024 * 1024) {
+    redirect(`/app/settings?avatar=${encodeURIComponent("Please keep avatar images under 10 MB.")}`);
+  }
+
+  const { data: existingProfile, error: profileLookupError } = await supabase
+    .from("users")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileLookupError) {
+    throw profileLookupError;
+  }
+
+  let avatarBuffer: Buffer;
+
+  try {
+    const rawBuffer = Buffer.from(await avatar.arrayBuffer());
+    avatarBuffer = await sharp(rawBuffer)
+      .rotate()
+      .resize(512, 512, { fit: "cover", position: "centre" })
+      .webp({ quality: 84 })
+      .toBuffer();
+  } catch {
+    redirect(`/app/settings?avatar=${encodeURIComponent("That image could not be processed. Try a different photo.")}`);
+  }
+
+  const avatarPath = `${user.id}/${crypto.randomUUID()}.webp`;
+  const { error: uploadError } = await serviceRoleClient.storage
+    .from("avatars")
+    .upload(avatarPath, avatarBuffer, {
+      contentType: "image/webp",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data: publicUrlData } = serviceRoleClient.storage
+    .from("avatars")
+    .getPublicUrl(avatarPath);
+
+  const avatarUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+  const now = new Date().toISOString();
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: {
+      avatar_url: avatarUrl,
+      picture: avatarUrl,
+    },
+  });
+
+  if (authError) {
+    redirect(`/app/settings?avatar=${encodeURIComponent(authError.message)}`);
+  }
+
+  const { error: profileError } = await supabase.from("users").upsert(
+    {
+      id: user.id,
+      avatar_url: avatarUrl,
+      updated_at: now,
+    },
+    { onConflict: "id" },
+  );
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  const previousAvatarPath = getAvatarObjectPath(existingProfile?.avatar_url);
+
+  if (previousAvatarPath && previousAvatarPath !== avatarPath) {
+    await serviceRoleClient.storage.from("avatars").remove([previousAvatarPath]);
+  }
+
+  revalidatePath("/app/settings");
+  revalidatePath("/app/friends");
+  redirect("/app/settings?avatar=updated");
+}
+
 export async function signInAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
 
   const email = getFormString(formData, "email").trim();
   const password = getFormString(formData, "password");
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -318,7 +450,8 @@ export async function getSongsByRatingAction(rating: number) {
     throw new Error(`Failed to fetch songs: ${ratingsError.message}`);
   }
 
-  const trackIds = (ratings ?? []).map((row: any) => row.track_id);
+  const typedRatings = (ratings ?? []) as SongRatingRow[];
+  const trackIds = typedRatings.map((row) => row.track_id);
 
   if (trackIds.length === 0) {
     return [];
@@ -333,15 +466,15 @@ export async function getSongsByRatingAction(rating: number) {
     throw new Error(`Failed to fetch album info: ${albumError.message}`);
   }
 
-  const albumMap = new Map<string, any>();
-  (albumTracks ?? []).forEach((row: any) => {
-    const album = Array.isArray(row.albums) ? row.albums[0] : row.albums;
-    albumMap.set(row.track_id, album);
+  const albumMap = new Map<string, AlbumTrackRow["albums"]>();
+  (albumTracks ?? []).forEach((row) => {
+    const typedRow = row as AlbumTrackRow;
+    albumMap.set(typedRow.track_id, typedRow.albums);
   });
 
-  return (ratings ?? [])
-    .map((row: any) => {
-      const track = Array.isArray(row.tracks) ? row.tracks[0] : row.tracks;
+  return typedRatings
+    .map((row) => {
+      const track = row.tracks;
       const artists = track?.artists;
       const album = albumMap.get(row.track_id);
 
@@ -353,5 +486,5 @@ export async function getSongsByRatingAction(rating: number) {
         album,
       };
     })
-    .filter((item) => item.id);
+    .filter((item): item is { id: string; name: string; duration_ms: number | null; artists: unknown; album: AlbumTrackRow["albums"] } => Boolean(item.id));
 }

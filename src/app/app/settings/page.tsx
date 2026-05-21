@@ -8,11 +8,12 @@ import { requireUser } from "@/server/auth";
 import { cn } from "@/lib/utils";
 import LocalTime from "@/components/local-time";
 import { SyncLibraryButton } from "@/components/sync-library-button";
+import { AvatarUploadForm } from "./profile-picture-form";
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ spotify?: string; username?: string }>;
+  searchParams: Promise<{ spotify?: string; username?: string; avatar?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -30,7 +31,7 @@ export default async function SettingsPage({
       .eq("source", "spotify_saved_albums")
       .maybeSingle(),
     supabase.from("user_settings").select("song_ratings_public_default").eq("user_id", user.id).maybeSingle(),
-    supabase.from("users").select("handle").eq("id", user.id).maybeSingle(),
+    supabase.from("users").select("handle,display_name,avatar_url").eq("id", user.id).maybeSingle(),
   ]);
 
   return (
@@ -39,6 +40,29 @@ export default async function SettingsPage({
         <h1 className="font-heading text-3xl">Settings</h1>
         <p className="text-sm text-muted-foreground">Account, privacy defaults, Spotify link, and sync controls.</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile picture</CardTitle>
+          <CardDescription>
+            Upload a picture from your camera roll or take one on the spot. Friends will see it anywhere your profile appears.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <AvatarUploadForm
+            avatarUrl={userProfile?.avatar_url ?? null}
+            displayName={userProfile?.display_name ?? userProfile?.handle ?? user.email ?? null}
+            handle={userProfile?.handle ?? null}
+          />
+          {params.avatar ? (
+            <p className={`text-sm ${params.avatar === "updated" ? "text-green-600" : "text-destructive"}`}>
+              {params.avatar === "updated"
+                ? "Profile picture updated successfully."
+                : decodeURIComponent(params.avatar)}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {params.spotify ? (
         <p className="rounded-md border border-border/70 bg-muted/40 p-3 text-sm">
