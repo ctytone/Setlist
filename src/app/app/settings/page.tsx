@@ -13,7 +13,7 @@ import { AvatarUploadForm } from "./profile-picture-form";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ spotify?: string; username?: string; avatar?: string }>;
+  searchParams: Promise<{ spotify?: string; username?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -54,13 +54,6 @@ export default async function SettingsPage({
             displayName={userProfile?.display_name ?? userProfile?.handle ?? user.email ?? null}
             handle={userProfile?.handle ?? null}
           />
-          {params.avatar ? (
-            <p className={`text-sm ${params.avatar === "updated" ? "text-green-600" : "text-destructive"}`}>
-              {params.avatar === "updated"
-                ? "Profile picture updated successfully."
-                : decodeURIComponent(params.avatar)}
-            </p>
-          ) : null}
         </CardContent>
       </Card>
 

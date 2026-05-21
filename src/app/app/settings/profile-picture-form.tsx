@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Camera, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { updateAvatarAction } from "@/server/actions/app-actions";
+import { useToast } from "@/hooks/use-toast";
 
 type AvatarUploadFormProps = {
   avatarUrl: string | null;
@@ -49,9 +50,40 @@ function AvatarUploadRow({
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  async function uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await fetch("/api/profile/avatar", {
+      method: "POST",
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { error?: string; avatarUrl?: string };
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Failed to upload profile picture.");
+    }
+
+    toast({
+      title: "Profile picture updated",
+      description: "Your new avatar is now visible to friends.",
+    });
+
+    router.refresh();
+  }
 
   return (
-    <form ref={formRef} action={updateAvatarAction} className="space-y-2">
+    <form
+      ref={formRef}
+      className="space-y-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+      }}
+    >
       <input
         ref={inputRef}
         type="file"
@@ -59,14 +91,27 @@ function AvatarUploadRow({
         accept="image/*"
         capture={capture}
         className="hidden"
-        onChange={(event) => {
-          if (!event.target.files?.length) {
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+
+          if (!file) {
             setSubmitting(false);
             return;
           }
 
-          setSubmitting(true);
-          formRef.current?.requestSubmit();
+          try {
+            setSubmitting(true);
+            await uploadAvatar(file);
+          } catch (error) {
+            toast({
+              title: "Upload failed",
+              description: error instanceof Error ? error.message : "Failed to upload profile picture.",
+              variant: "destructive",
+            });
+          } finally {
+            setSubmitting(false);
+            event.target.value = "";
+          }
         }}
       />
       <Button
