@@ -292,6 +292,7 @@ export default async function FriendProfilePage({
                   coverUrl={album.cover_url}
                   rating={row.derived_rating === null ? null : Number(row.derived_rating)}
                   status={null}
+                  href={`/app/albums/${row.album_id}?view=friend&userId=${profile.id}`}
                 />
               );
             })}

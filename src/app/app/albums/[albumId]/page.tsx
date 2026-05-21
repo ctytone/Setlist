@@ -1,6 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 
-import { deleteAlbumAction } from "@/server/actions/app-actions";
+import { addAlbumToLibraryAction, deleteAlbumAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import LiveAlbumAverage from "@/components/live-album-average";
 import SongRatingCell from "@/components/song-rating-cell";
 import StatusForm from "@/components/status-form";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 type TrackRelation =
   | {
@@ -54,19 +56,25 @@ function pickArtist(artistRelation: ArtistRelation) {
 
 export default async function AlbumDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ albumId: string }>;
+  searchParams?: Promise<{ view?: string; userId?: string }>;
 }) {
   const { albumId } = await params;
   const { supabase, user } = await requireUser();
+  const serviceRoleClient = createServiceRoleClient();
+  const viewerParams = searchParams ? await searchParams : {};
+  const sourceUserId = viewerParams.view === "friend" ? viewerParams.userId ?? null : null;
+  const isFriendView = Boolean(sourceUserId && sourceUserId !== user.id);
 
-  const [{ data: album }, { data: trackRows }, { data: ratings }, { data: statuses }] = await Promise.all([
-    supabase
+  const [{ data: album }, { data: trackRows }, { data: currentUserRatings }, { data: statuses }] = await Promise.all([
+    serviceRoleClient
       .from("albums")
       .select("id,name,release_date,cover_url,artists:primary_artist_id(id,name)")
       .eq("id", albumId)
       .maybeSingle(),
-    supabase
+    serviceRoleClient
       .from("album_tracks")
       .select("track_number,disc_number,tracks(id,name,duration_ms)")
       .eq("album_id", albumId)
@@ -86,13 +94,56 @@ export default async function AlbumDetailPage({
     return <EmptyState title="Album not found" description="Try adding it again from search." />;
   }
 
-  const ratingMap = new Map((ratings ?? []).map((entry) => [entry.track_id, Number(entry.rating)]));
-  const listenedCount = (trackRows ?? []).filter((row) => {
+  const sourceUser = sourceUserId
+    ? (await serviceRoleClient
+        .from("users")
+        .select("id,handle,display_name,avatar_url,created_at,updated_at")
+        .eq("id", sourceUserId)
+        .maybeSingle()).data
+    : null;
+
+  const canViewFriendRatings = Boolean(sourceUser && (sourceUser.id === user.id || (await (async () => {
+    const { data, error } = await serviceRoleClient
+      .from("friend_activity")
+      .select("id")
+      .or(`and(user_id.eq.${user.id},actor_id.eq.${sourceUser.id},action.eq.friend_added),and(user_id.eq.${sourceUser.id},actor_id.eq.${user.id},action.eq.friend_added)`)
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? []).length > 0;
+  })())));
+
+  const profileLabel = sourceUser?.display_name || sourceUser?.handle || "Their";
+
+  const trackRowsTyped = (trackRows ?? []) as Array<{
+    track_number: number;
+    disc_number: number;
+    tracks: TrackRelation;
+  }>;
+
+  const currentRatings = (currentUserRatings ?? []) as Array<{ track_id: string; rating: number | string; is_public: boolean }>;
+  const sourceRatings = canViewFriendRatings
+    ? ((await serviceRoleClient
+        .from("song_ratings")
+        .select("track_id,rating,is_public,tracks:track_id(id,name,duration_ms,artists:primary_artist_id(name))")
+        .eq("user_id", sourceUser!.id)
+        .eq("track_id", albumId)
+        .order("rated_at", { ascending: false })).data ?? [])
+    : [];
+
+  const ratingMap = new Map(currentRatings.map((entry) => [entry.track_id, Number(entry.rating)]));
+  const friendRatingMap = new Map((sourceRatings as Array<{ track_id: string; rating: number | string }>).map((entry) => [entry.track_id, Number(entry.rating)]));
+  const listenedCount = trackRowsTyped.filter((row) => {
     const track = pickTrack(row.tracks as TrackRelation);
     return Boolean(track?.id && ratingMap.has(track.id));
   }).length;
   const totalTracks = trackRows?.length ?? 0;
   const artist = pickArtist(album.artists as ArtistRelation);
+  const albumLabel = isFriendView && sourceUser ? `${profileLabel}'s ratings` : "Your album";
+  const canEdit = !isFriendView;
 
   return (
     <section className="space-y-6">
@@ -115,6 +166,11 @@ export default async function AlbumDetailPage({
               <p className="text-sm text-muted-foreground">
                 {artist?.name ?? "Unknown artist"} • {album.release_date || "Unknown release"}
               </p>
+              {isFriendView && sourceUser ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Viewing {profileLabel}&apos;s ratings.
+                </p>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
@@ -127,40 +183,49 @@ export default async function AlbumDetailPage({
             <div className="mt-4">
               <LiveAlbumAverage albumId={albumId} />
             </div>
-            {/* Client-side status form with animated confirmation */}
-            {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-            {/* Render client component */}
-            <StatusForm itemId={albumId} initialStatus={statuses?.status ?? "want_to_listen"} />
+            {canEdit ? (
+              <StatusForm itemId={albumId} initialStatus={statuses?.status ?? "want_to_listen"} />
+            ) : sourceUser ? (
+              <form action={addAlbumToLibraryAction} className="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="albumId" value={albumId} />
+                <Button type="submit">Add album to your library</Button>
+                <Link href="/app/albums" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+                  Back to your library
+                </Link>
+              </form>
+            ) : null}
           </div>
         </CardContent>
-        <form action={deleteAlbumAction} className="absolute right-4 top-4">
-          <input type="hidden" name="albumId" value={albumId} />
-          <Button
-            type="submit"
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-            title="Remove album from library"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </form>
+        {canEdit ? (
+          <form action={deleteAlbumAction} className="absolute right-4 top-4">
+            <input type="hidden" name="albumId" value={albumId} />
+            <Button
+              type="submit"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+              title="Remove album from library"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </form>
+        ) : null}
       </Card>
 
       {/* Tags UI removed — will be reintroduced later with automated tagging */}
 
       <Card>
         <CardHeader>
-          <CardTitle>Tracks</CardTitle>
+          <CardTitle>{albumLabel}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(trackRows ?? []).map((row) => {
+          {trackRowsTyped.map((row) => {
             const track = pickTrack(row.tracks as TrackRelation);
             if (!track) {
               return null;
             }
 
-            const rating = ratingMap.get(track.id);
+            const rating = canEdit ? ratingMap.get(track.id) : friendRatingMap.get(track.id);
 
             return (
               <div key={track.id} className="rounded-md border border-border/70 p-3">
@@ -173,11 +238,17 @@ export default async function AlbumDetailPage({
                       {Math.round(Number(track.duration_ms) / 60000)} min
                     </p>
                   </div>
-                  <SongRatingCell
-                    trackId={track.id}
-                    albumId={albumId}
-                    initialRating={rating ? Number(rating) : null}
-                  />
+                  {canEdit ? (
+                    <SongRatingCell
+                      trackId={track.id}
+                      albumId={albumId}
+                      initialRating={rating ? Number(rating) : null}
+                    />
+                  ) : (
+                    <Badge variant={rating ? "default" : "secondary"}>
+                      {rating ? `${Number(rating).toFixed(1)} stars` : "No rating"}
+                    </Badge>
+                  )}
                 </div>
               </div>
             );

@@ -13,6 +13,7 @@ export function AlbumCard({
   coverUrl,
   rating,
   status,
+  href,
 }: {
   id: string;
   name: string;
@@ -20,10 +21,13 @@ export function AlbumCard({
   coverUrl: string | null;
   rating: number | null;
   status: string | null;
+  href?: string;
 }) {
+  const cardHref = href ?? `/app/albums/${id}`;
+
   return (
     <div className="relative">
-      <Link href={`/app/albums/${id}`}>
+      <Link href={cardHref}>
         <Card className="overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
           <CardContent className="p-0">
             <div className="aspect-square w-full bg-muted/60">

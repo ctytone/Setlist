@@ -382,6 +382,50 @@ export async function addAlbumFromSpotifyAction(formData: FormData) {
   revalidatePath(`/app/albums`);
 }
 
+export async function addAlbumToLibraryAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const albumId = getFormString(formData, "albumId");
+
+  if (!albumId) {
+    throw new Error("Album ID is required");
+  }
+
+  const { data: album, error: albumError } = await supabase
+    .from("albums")
+    .select("id")
+    .eq("id", albumId)
+    .maybeSingle();
+
+  if (albumError) {
+    throw new Error(`Failed to fetch album: ${albumError.message}`);
+  }
+
+  if (!album) {
+    throw new Error("Album not found");
+  }
+
+  const { error } = await supabase.from("user_albums").upsert(
+    {
+      user_id: user.id,
+      album_id: albumId,
+      source: "friend",
+      imported_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id,album_id",
+    },
+  );
+
+  if (error) {
+    throw new Error(`Failed to add album to your library: ${error.message}`);
+  }
+
+  revalidatePath("/app/albums");
+  revalidatePath(`/app/albums/${albumId}`);
+  redirect(`/app/albums/${albumId}`);
+}
+
 export async function syncSavedAlbumsAction() {
   const { supabase, user } = await requireUser();
 
