@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { addAlbumToLibraryAction, deleteAlbumAction } from "@/server/actions/app-actions";
+import { deleteAlbumAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import LiveAlbumAverage from "@/components/live-album-average";
 import SongRatingCell from "@/components/song-rating-cell";
 import StatusForm from "@/components/status-form";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { AddToLibraryButton } from "./add-to-library-button";
 
 type TrackRelation =
   | {
@@ -68,7 +69,7 @@ export default async function AlbumDetailPage({
   const sourceUserId = viewerParams.view === "friend" ? viewerParams.userId ?? null : null;
   const isFriendView = Boolean(sourceUserId && sourceUserId !== user.id);
 
-  const [{ data: album }, { data: trackRows }, { data: currentUserRatings }, { data: statuses }] = await Promise.all([
+  const [{ data: album }, { data: trackRows }, { data: currentUserRatings }, { data: statuses }, { data: existingLibraryEntry }] = await Promise.all([
     serviceRoleClient
       .from("albums")
       .select("id,name,release_date,cover_url,artists:primary_artist_id(id,name)")
@@ -87,6 +88,12 @@ export default async function AlbumDetailPage({
       .eq("user_id", user.id)
       .eq("item_type", "album")
       .eq("item_id", albumId)
+      .maybeSingle(),
+    supabase
+      .from("user_albums")
+      .select("album_id")
+      .eq("user_id", user.id)
+      .eq("album_id", albumId)
       .maybeSingle(),
   ]);
 
@@ -144,6 +151,7 @@ export default async function AlbumDetailPage({
   const artist = pickArtist(album.artists as ArtistRelation);
   const albumLabel = isFriendView && sourceUser ? `${profileLabel}'s ratings` : "Your album";
   const canEdit = !isFriendView;
+  const alreadyInLibrary = Boolean(existingLibraryEntry);
 
   return (
     <section className="space-y-6">
@@ -186,13 +194,12 @@ export default async function AlbumDetailPage({
             {canEdit ? (
               <StatusForm itemId={albumId} initialStatus={statuses?.status ?? "want_to_listen"} />
             ) : sourceUser ? (
-              <form action={addAlbumToLibraryAction} className="flex flex-wrap items-center gap-2">
-                <input type="hidden" name="albumId" value={albumId} />
-                <Button type="submit">Add album to your library</Button>
+              <div className="flex flex-wrap items-center gap-3">
+                <AddToLibraryButton albumId={albumId} initiallyAdded={alreadyInLibrary} />
                 <Link href="/app/albums" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
                   Back to your library
                 </Link>
-              </form>
+              </div>
             ) : null}
           </div>
         </CardContent>

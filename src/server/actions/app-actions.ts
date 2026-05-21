@@ -382,13 +382,21 @@ export async function addAlbumFromSpotifyAction(formData: FormData) {
   revalidatePath(`/app/albums`);
 }
 
-export async function addAlbumToLibraryAction(formData: FormData) {
+export type AddAlbumToLibraryState = {
+  status: "idle" | "added" | "error";
+  message?: string;
+};
+
+export async function addAlbumToLibraryAction(
+  _prevState: AddAlbumToLibraryState,
+  formData: FormData,
+): Promise<AddAlbumToLibraryState> {
   const { supabase, user } = await requireUser();
 
   const albumId = getFormString(formData, "albumId");
 
   if (!albumId) {
-    throw new Error("Album ID is required");
+    return { status: "error", message: "Album ID is required" };
   }
 
   const { data: album, error: albumError } = await supabase
@@ -398,11 +406,11 @@ export async function addAlbumToLibraryAction(formData: FormData) {
     .maybeSingle();
 
   if (albumError) {
-    throw new Error(`Failed to fetch album: ${albumError.message}`);
+    return { status: "error", message: `Failed to fetch album: ${albumError.message}` };
   }
 
   if (!album) {
-    throw new Error("Album not found");
+    return { status: "error", message: "Album not found" };
   }
 
   const { error } = await supabase.from("user_albums").upsert(
@@ -418,12 +426,13 @@ export async function addAlbumToLibraryAction(formData: FormData) {
   );
 
   if (error) {
-    throw new Error(`Failed to add album to your library: ${error.message}`);
+    return { status: "error", message: `Failed to add album to your library: ${error.message}` };
   }
 
   revalidatePath("/app/albums");
   revalidatePath(`/app/albums/${albumId}`);
-  redirect(`/app/albums/${albumId}`);
+
+  return { status: "added" };
 }
 
 export async function syncSavedAlbumsAction() {
