@@ -44,10 +44,14 @@ export function decryptSpotifyToken(token: string) {
   );
   decipher.setAuthTag(Buffer.from(authTagBase64, "base64"));
 
-  return Buffer.concat([
-    decipher.update(Buffer.from(encryptedBase64, "base64")),
-    decipher.final(),
-  ]).toString("utf8");
+  try {
+    return Buffer.concat([
+      decipher.update(Buffer.from(encryptedBase64, "base64")),
+      decipher.final(),
+    ]).toString("utf8");
+  } catch {
+    throw new Error("Unable to decrypt Spotify token stored in the database.");
+  }
 }
 
 export function isEncryptedSpotifyToken(token: string) {
