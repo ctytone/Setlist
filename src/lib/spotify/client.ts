@@ -9,6 +9,11 @@ const spotifyErrorSchema = z.object({
   }),
 });
 
+const spotifyOAuthErrorSchema = z.object({
+  error: z.string(),
+  error_description: z.string().optional(),
+});
+
 export async function spotifyFetch<T>(
   endpoint: string,
   accessToken: string,
@@ -59,6 +64,13 @@ export async function fetchSpotifyToken(code: string) {
   });
 
   if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const parsed = spotifyOAuthErrorSchema.safeParse(body);
+
+    if (parsed.success) {
+      throw new Error(parsed.data.error_description ?? parsed.data.error ?? "Failed to exchange Spotify OAuth code.");
+    }
+
     throw new Error("Failed to exchange Spotify OAuth code.");
   }
 
@@ -92,6 +104,13 @@ export async function refreshSpotifyToken(refreshToken: string) {
   });
 
   if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const parsed = spotifyOAuthErrorSchema.safeParse(body);
+
+    if (parsed.success) {
+      throw new Error(parsed.data.error_description ?? parsed.data.error ?? "Failed to refresh Spotify access token.");
+    }
+
     throw new Error("Failed to refresh Spotify access token.");
   }
 
