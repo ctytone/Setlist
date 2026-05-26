@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ExternalLink, Trash2 } from "lucide-react";
 
 import { deleteAlbumAction } from "@/server/actions/app-actions";
 import { requireUser } from "@/server/auth";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import LiveAlbumAverage from "@/components/live-album-average";
@@ -72,7 +72,7 @@ export default async function AlbumDetailPage({
   const [{ data: album }, { data: trackRows }, { data: currentUserRatings }, { data: statuses }, { data: existingLibraryEntry }] = await Promise.all([
     serviceRoleClient
       .from("albums")
-      .select("id,name,release_date,cover_url,artists:primary_artist_id(id,name)")
+      .select("id,name,release_date,cover_url,spotify_id,spotify_url,artists:primary_artist_id(id,name)")
       .eq("id", albumId)
       .maybeSingle(),
     serviceRoleClient
@@ -124,6 +124,7 @@ export default async function AlbumDetailPage({
   })())));
 
   const profileLabel = sourceUser?.display_name || sourceUser?.handle || "Their";
+  const spotifyAlbumHref = album.spotify_id ? `spotify:album:${album.spotify_id}` : album.spotify_url ?? null;
 
   const trackRowsTyped = (trackRows ?? []) as Array<{
     track_number: number;
@@ -169,15 +170,26 @@ export default async function AlbumDetailPage({
             ) : null}
           </div>
           <div className="space-y-4">
-            <div>
-              <h1 className="font-heading text-3xl">{album.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {artist?.name ?? "Unknown artist"} • {album.release_date || "Unknown release"}
-              </p>
-              {isFriendView && sourceUser ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Viewing {profileLabel}&apos;s ratings.
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="font-heading text-3xl">{album.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {artist?.name ?? "Unknown artist"} • {album.release_date || "Unknown release"}
                 </p>
+                {isFriendView && sourceUser ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Viewing {profileLabel}&apos;s ratings.
+                  </p>
+                ) : null}
+              </div>
+              {spotifyAlbumHref ? (
+                <a
+                  href={spotifyAlbumHref}
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  Open in Spotify
+                  <ExternalLink className="size-4" />
+                </a>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
