@@ -14,6 +14,7 @@ import SongRatingCell from "@/components/song-rating-cell";
 import StatusForm from "@/components/status-form";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { AddToLibraryButton } from "./add-to-library-button";
+import { OpenInSpotifyButton } from "./open-in-spotify-button";
 
 type TrackRelation =
   | {
@@ -182,15 +183,6 @@ export default async function AlbumDetailPage({
                   </p>
                 ) : null}
               </div>
-              {spotifyAlbumHref ? (
-                <a
-                  href={spotifyAlbumHref}
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  Open in Spotify
-                  <ExternalLink className="size-4" />
-                </a>
-              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
@@ -216,18 +208,21 @@ export default async function AlbumDetailPage({
           </div>
         </CardContent>
         {canEdit ? (
-          <form action={deleteAlbumAction} className="absolute right-4 top-4">
-            <input type="hidden" name="albumId" value={albumId} />
-            <Button
-              type="submit"
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-              title="Remove album from library"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </form>
+          <div className="absolute right-4 top-4 flex items-center gap-2">
+            {spotifyAlbumHref ? <OpenInSpotifyButton spotifyAlbumHref={spotifyAlbumHref} /> : null}
+            <form action={deleteAlbumAction}>
+              <input type="hidden" name="albumId" value={albumId} />
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                className="h-9 w-9 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                title="Remove album from library"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
         ) : null}
       </Card>
 
