@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { fetchSpotifyToken } from "@/lib/spotify/client";
+import { encryptSpotifyToken } from "@/lib/spotify/token-vault";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -44,12 +45,7 @@ export async function GET(request: Request) {
     const profile = (await profileResponse.json()) as {
       id: string;
       display_name?: string;
-      email?: string;
-      product?: string;
     };
-
-    console.log("[Spotify callback] Profile fetched:", profile);
-    console.log("[Spotify callback] User ID:", user.id);
 
     // Use service role client to bypass RLS for this privileged operation
     const serviceRoleClient = createServiceRoleClient();
@@ -78,10 +74,8 @@ export async function GET(request: Request) {
         user_id: user.id,
         spotify_user_id: profile.id,
         spotify_display_name: profile.display_name ?? null,
-        spotify_email: profile.email ?? null,
-        spotify_product: profile.product ?? null,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
+        access_token: encryptSpotifyToken(token.access_token),
+        refresh_token: encryptSpotifyToken(token.refresh_token),
         expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
         scopes: token.scope,
       },
@@ -89,15 +83,13 @@ export async function GET(request: Request) {
     );
 
     if (error) {
-      console.error("[Spotify callback] Upsert error:", error);
+      console.error("[Spotify callback] Upsert error");
       throw error;
     }
 
-    console.log("[Spotify callback] Upsert success:", data);
-
     return NextResponse.redirect(new URL("/app/settings?spotify=linked", request.url));
   } catch (error) {
-    console.error("[Spotify callback] Error:", error);
+    console.error("[Spotify callback] Error");
     return NextResponse.redirect(new URL("/app/settings?spotify=failed", request.url));
   }
 }

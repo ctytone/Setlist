@@ -195,11 +195,6 @@ create policy "albums_select_authenticated" on public.albums for select using (a
 create policy "tracks_select_authenticated" on public.tracks for select using (auth.role() = 'authenticated');
 create policy "album_tracks_select_authenticated" on public.album_tracks for select using (auth.role() = 'authenticated');
 
-create policy "artists_write_authenticated" on public.artists for insert with check (auth.role() = 'authenticated');
-create policy "albums_write_authenticated" on public.albums for insert with check (auth.role() = 'authenticated');
-create policy "tracks_write_authenticated" on public.tracks for insert with check (auth.role() = 'authenticated');
-create policy "album_tracks_write_authenticated" on public.album_tracks for insert with check (auth.role() = 'authenticated');
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql

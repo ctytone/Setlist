@@ -99,37 +99,11 @@ export default async function FriendProfilePage({
   const { supabase, user } = await requireUser();
   const serviceRoleClient = createServiceRoleClient();
 
-  const [
-    { data: profile },
-    { data: albumRows },
-    { data: ratingRows },
-    { data: activityRows },
-  ] =
-    await Promise.all([
-      serviceRoleClient
-        .from("users")
-        .select("id,handle,display_name,avatar_url,created_at,updated_at")
-        .eq("id", userId)
-        .maybeSingle(),
-      serviceRoleClient
-        .from("user_albums")
-        .select("album_id,derived_rating,updated_at,albums:album_id(id,name,cover_url,primary_artist_id,artists:primary_artist_id(name))")
-        .eq("user_id", userId)
-        .order("updated_at", { ascending: false })
-        .limit(8),
-      serviceRoleClient
-        .from("song_ratings")
-        .select("track_id,rating,is_public,rated_at,tracks:track_id(id,name,duration_ms,artists:primary_artist_id(name))")
-        .eq("user_id", userId)
-        .order("rated_at", { ascending: false })
-        .limit(8),
-      serviceRoleClient
-        .from("friend_activity")
-        .select("id,user_id,actor_id,action,subject_id,metadata,created_at,is_read,actor:actor_id(id,handle,display_name,avatar_url,created_at,updated_at)")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(6),
-    ]);
+  const { data: profile } = await serviceRoleClient
+    .from("users")
+    .select("id,handle,display_name,avatar_url,created_at,updated_at")
+    .eq("id", userId)
+    .maybeSingle();
 
   if (!profile) {
     notFound();
@@ -140,6 +114,31 @@ export default async function FriendProfilePage({
   if (!canViewProfile) {
     notFound();
   }
+
+  const [
+    { data: albumRows },
+    { data: ratingRows },
+    { data: activityRows },
+  ] = await Promise.all([
+    serviceRoleClient
+      .from("user_albums")
+      .select("album_id,derived_rating,updated_at,albums:album_id(id,name,cover_url,primary_artist_id,artists:primary_artist_id(name))")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(8),
+    serviceRoleClient
+      .from("song_ratings")
+      .select("track_id,rating,is_public,rated_at,tracks:track_id(id,name,duration_ms,artists:primary_artist_id(name))")
+      .eq("user_id", userId)
+      .order("rated_at", { ascending: false })
+      .limit(8),
+    serviceRoleClient
+      .from("friend_activity")
+      .select("id,user_id,actor_id,action,subject_id,metadata,created_at,is_read,actor:actor_id(id,handle,display_name,avatar_url,created_at,updated_at)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(6),
+  ]);
 
   const displayName = profile.display_name || profile.handle || "User";
   const albums = (albumRows ?? []) as ProfileAlbumRow[];

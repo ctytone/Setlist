@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getEnv } from "@/lib/env";
+import { buildSpotifyAuthorizeUrl } from "@/lib/spotify/oauth";
 
 export async function GET() {
   const env = getEnv();
@@ -16,13 +17,7 @@ export async function GET() {
     path: "/",
   });
 
-  const url = new URL("https://accounts.spotify.com/authorize");
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", env.SPOTIFY_CLIENT_ID);
-  url.searchParams.set("scope", "user-library-read user-read-email user-read-private");
-  url.searchParams.set("redirect_uri", env.SPOTIFY_REDIRECT_URI);
-  url.searchParams.set("state", state);
-  url.searchParams.set("show_dialog", "true");
+  const url = buildSpotifyAuthorizeUrl(env, state);
 
   return NextResponse.redirect(url.toString());
 }
