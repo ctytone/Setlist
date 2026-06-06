@@ -6,14 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function OpenInSpotifyButton({ spotifyAlbumHref }: { spotifyAlbumHref: string }) {
   function launchSpotify() {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = spotifyAlbumHref;
-    document.body.appendChild(iframe);
-
-    window.setTimeout(() => {
-      iframe.remove();
-    }, 2000);
+    window.location.assign(spotifyAlbumHref);
   }
 
   return (
