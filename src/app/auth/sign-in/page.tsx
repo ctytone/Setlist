@@ -1,11 +1,10 @@
 import Link from "next/link";
 
 import { signInAction } from "@/server/actions/app-actions";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 
 export default async function SignInPage({
   searchParams,
@@ -40,12 +39,9 @@ export default async function SignInPage({
               Sign in
             </Button>
           </form>
-          <Link
-            href="/api/spotify/oauth/start"
-            className={cn(buttonVariants({ variant: "outline" }), "w-full")}
-          >
-            Sign in with Spotify (link account)
-          </Link>
+          <p className="text-sm text-muted-foreground">
+            Spotify linking is reserved for the admin account after sign-in.
+          </p>
           <p className="text-sm text-muted-foreground">
             New here? <Link href="/auth/sign-up" className="underline">Create an account</Link>
           </p>

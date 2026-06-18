@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { fetchSpotifyToken } from "@/lib/spotify/client";
+import { canUseSpotifyLinking } from "@/lib/spotify/linking";
 import { encryptSpotifyToken } from "@/lib/spotify/token-vault";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 
@@ -26,6 +27,10 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
+  }
+
+  if (!canUseSpotifyLinking(user.email)) {
+    return NextResponse.redirect(new URL("/app/settings?spotify=disabled", request.url));
   }
 
   try {
@@ -69,7 +74,7 @@ export async function GET(request: Request) {
       throw userError;
     }
 
-    const { error, data } = await serviceRoleClient.from("spotify_accounts").upsert(
+    const { error } = await serviceRoleClient.from("spotify_accounts").upsert(
       {
         user_id: user.id,
         spotify_user_id: profile.id,
@@ -88,7 +93,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.redirect(new URL("/app/settings?spotify=linked", request.url));
-  } catch (error) {
+  } catch {
     console.error("[Spotify callback] Error");
     return NextResponse.redirect(new URL("/app/settings?spotify=failed", request.url));
   }

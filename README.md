@@ -38,6 +38,7 @@ Stack:
 	- NEXT_PUBLIC_SUPABASE_URL
 	- NEXT_PUBLIC_SUPABASE_ANON_KEY
 	- SUPABASE_SERVICE_ROLE_KEY
+	- SPOTIFY_LINK_ADMIN_EMAILS
 	- SPOTIFY_CLIENT_ID
 	- SPOTIFY_CLIENT_SECRET
 	- SPOTIFY_REDIRECT_URI
@@ -48,6 +49,7 @@ Stack:
 5. Configure Spotify app:
 	- Add redirect URI matching SPOTIFY_REDIRECT_URI
 	- Enable scopes used by this app: user-library-read user-read-email user-read-private
+	- Set SPOTIFY_LINK_ADMIN_EMAILS to the email address or comma-separated list of emails that may link Spotify
 
 6. Start dev server:
 	npm run dev

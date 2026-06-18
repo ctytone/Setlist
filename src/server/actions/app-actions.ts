@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { songRatingSchema, statusSchema, usernameSchema } from "@/lib/schemas";
+import { canUseSpotifyLinking } from "@/lib/spotify/linking";
 import { fetchSpotifyAlbumDetails, fetchSavedAlbumsPage } from "@/server/spotify";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { recalculateAlbumRating, upsertAlbumGraphForUser } from "@/server/library";
@@ -437,6 +438,10 @@ export async function addAlbumToLibraryAction(
 
 export async function syncSavedAlbumsAction() {
   const { supabase, user } = await requireUser();
+
+  if (!canUseSpotifyLinking(user.email)) {
+    redirect("/app/settings?spotify=disabled");
+  }
 
   await supabase.from("sync_state").upsert(
     {

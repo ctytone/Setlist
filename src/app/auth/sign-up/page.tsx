@@ -19,7 +19,7 @@ export default async function SignUpPage({
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Create account</CardTitle>
           <CardDescription>
-            Start tracking albums and songs. Spotify linking is optional.
+            Start tracking albums and songs. Spotify linking is reserved for the admin account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

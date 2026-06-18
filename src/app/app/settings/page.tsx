@@ -3,11 +3,12 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { signOutAction, syncSavedAlbumsAction, updateUsernameAction } from "@/server/actions/app-actions";
-import { requireUser } from "@/server/auth";
-import { cn } from "@/lib/utils";
 import LocalTime from "@/components/local-time";
 import { SyncLibraryButton } from "@/components/sync-library-button";
+import { cn } from "@/lib/utils";
+import { canUseSpotifyLinking } from "@/lib/spotify/linking";
+import { signOutAction, syncSavedAlbumsAction, updateUsernameAction } from "@/server/actions/app-actions";
+import { requireUser } from "@/server/auth";
 import { AvatarUploadForm } from "./profile-picture-form";
 
 export default async function SettingsPage({
@@ -17,6 +18,7 @@ export default async function SettingsPage({
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
+  const canLinkSpotify = canUseSpotifyLinking(user.email);
 
   const [{ data: spotifyAccount }, { data: syncState }, { data: userSettings }, { data: userProfile }] = await Promise.all([
     supabase
@@ -59,7 +61,13 @@ export default async function SettingsPage({
 
       {params.spotify ? (
         <p className="rounded-md border border-border/70 bg-muted/40 p-3 text-sm">
-          Spotify link result: {params.spotify}
+          {params.spotify === "linked"
+            ? "Spotify linked successfully."
+            : params.spotify === "failed"
+              ? "Spotify linking failed. Try again from the admin account."
+              : params.spotify === "invalid_state"
+                ? "Spotify linking could not be verified. Please try again."
+                : "Spotify linking is disabled for this account."}
         </p>
       ) : null}
 
@@ -104,30 +112,38 @@ export default async function SettingsPage({
         <CardHeader>
           <CardTitle>Spotify account</CardTitle>
           <CardDescription>
-            Link Spotify to sync your saved albums. Manual search and rating still work without linking.
+            Manual search and rating still work without linking. Spotify linking is reserved for the admin account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            Linked account: {spotifyAccount?.spotify_display_name ?? spotifyAccount?.spotify_user_id ?? "Not linked"}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/api/spotify/oauth/start"
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              Link Spotify
-            </Link>
-            <form action={syncSavedAlbumsAction}>
-              {spotifyAccount ? <SyncLibraryButton /> : <Button type="submit" disabled>Sync library</Button>}
-            </form>
-          </div>
-          <p>
-            Last sync: <LocalTime iso={syncState?.completed_at ?? null} />
-          </p>
-          {syncState?.status ? <p>Status: {syncState.status}</p> : null}
-          {syncState?.imported_count ? <p>Imported albums: {syncState.imported_count}</p> : null}
-          {syncState?.last_error ? <p className="text-destructive">Last error: {syncState.last_error}</p> : null}
+          {canLinkSpotify ? (
+            <>
+              <p>
+                Linked account: {spotifyAccount?.spotify_display_name ?? spotifyAccount?.spotify_user_id ?? "Not linked"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/api/spotify/oauth/start"
+                  className={cn(buttonVariants({ variant: "outline" }))}
+                >
+                  Link Spotify
+                </Link>
+                <form action={syncSavedAlbumsAction}>
+                  {spotifyAccount ? <SyncLibraryButton /> : <Button type="submit" disabled>Sync library</Button>}
+                </form>
+              </div>
+              <p>
+                Last sync: <LocalTime iso={syncState?.completed_at ?? null} />
+              </p>
+              {syncState?.status ? <p>Status: {syncState.status}</p> : null}
+              {syncState?.imported_count ? <p>Imported albums: {syncState.imported_count}</p> : null}
+              {syncState?.last_error ? <p className="text-destructive">Last error: {syncState.last_error}</p> : null}
+            </>
+          ) : (
+            <p>
+              This account cannot link Spotify. Add albums manually from Search, and the admin account can keep using Spotify sync.
+            </p>
+          )}
         </CardContent>
       </Card>
 
