@@ -144,6 +144,9 @@ export default async function SettingsPage({
               This account cannot link Spotify. Add albums manually from Search, and the admin account can keep using Spotify sync.
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            Debug: signed-in email is {user.email ?? "not available"}; Spotify admin access is {canLinkSpotify ? "enabled" : "disabled"}.
+          </p>
         </CardContent>
       </Card>
 
